@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wyniki ewaluacji</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap wrap-wide topbar-inner">
+    <span class="brand">Wyniki ewaluacji</span>
+    <span class="topbar-meta"><a href="index.html">← ankieta</a></span>
+  </div>
+</header>
+
+<main class="wrap wrap-wide">
+
+  <section class="card" id="loader">
+    <h1>Wczytaj odpowiedzi</h1>
+    <p class="lead">
+      Wrzuć pliki JSON od respondentów (te z ankiety), albo eksport z arkusza,
+      albo wklej tablicę JSON. Wszystko liczy się lokalnie w Twojej przeglądarce -
+      dane nigdzie nie wychodzą.
+    </p>
+
+    <div class="dropzone" id="drop">
+      <p><strong>Przeciągnij pliki .json tutaj</strong></p>
+      <p class="small">albo</p>
+      <input type="file" id="fileInput" multiple accept=".json,.txt,.ndjson">
+    </div>
+
+    <p class="muted small" style="margin-top:18px">Wklej JSON (obiekt, tablica obiektów albo JSON-per-linia):</p>
+    <textarea id="pasteBox" placeholder='[{"schema":"markiq-eval/1", ...}]'></textarea>
+    <div class="nav-row">
+      <button class="btn btn-sm" id="btnDemo" type="button">Pokaż na danych przykładowych</button>
+      <button class="btn btn-primary" id="btnLoad" type="button">Policz wyniki</button>
+    </div>
+    <p class="q-err" id="loadErr" hidden></p>
+  </section>
+
+  <section id="report" hidden></section>
+
+</main>
+
+<footer class="wrap wrap-wide foot">
+  <span id="footNote"></span>
+</footer>
+
+<script src="assets/config.js"></script>
+<script src="assets/metrics.js"></script>
+<script src="assets/results.js"></script>
+</body>
+</html>

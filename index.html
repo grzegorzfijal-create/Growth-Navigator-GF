@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ewaluacja MarkIQ - feedback od marketerów</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <span class="brand" id="brandName">MarkIQ</span>
+    <span class="topbar-meta" id="topMeta"></span>
+  </div>
+</header>
+
+<div class="progress-track" id="progressTrack" hidden>
+  <div class="progress-bar" id="progressBar"></div>
+</div>
+
+<main class="wrap" id="app">
+
+  <!-- ============================ INTRO ============================ -->
+  <section class="card" id="screenIntro">
+    <h1>Pomóż nam zbudować narzędzie, którego realnie będziesz używać</h1>
+    <p class="lead" id="introPitch"></p>
+
+    <div class="panel">
+      <h3>Jak to działa</h3>
+      <ol class="steps">
+        <li>Otwierasz demo aplikacji w nowej karcie i klikasz przez chwilę.</li>
+        <li>Wykonujesz <strong>3 konkretne zadania</strong> - to najważniejsza część.</li>
+        <li>Odpowiadasz na pytania o wartość, użycie i cenę.</li>
+      </ol>
+      <p class="muted">
+        Czas: <strong id="introTime"></strong>. Odpowiedzi zapisują się w Twojej przeglądarce -
+        możesz przerwać i wrócić później.
+      </p>
+    </div>
+
+    <div class="panel panel-warn">
+      <strong>Jedna prośba:</strong> nie bądź miły. Jeśli coś jest bezużyteczne,
+      niezrozumiałe albo za drogie - napisz to wprost. Grzeczny feedback jest dla nas
+      bezwartościowy i kosztuje nas miesiące pracy w złym kierunku.
+    </div>
+
+    <label class="check consent">
+      <input type="checkbox" id="consent">
+      <span>Zgadzam się na przetwarzanie moich odpowiedzi w celu rozwoju produktu.
+      Jeśli podam e-mail, mogę zostać zaproszony do pilotażu.</span>
+    </label>
+
+    <button class="btn btn-primary btn-lg" id="btnStart" disabled>Zaczynamy</button>
+    <p class="muted small" id="resumeNote" hidden></p>
+  </section>
+
+  <!-- ============================ PYTANIA ============================ -->
+  <section class="card" id="screenSurvey" hidden>
+    <div class="section-head">
+      <p class="eyebrow" id="secCounter"></p>
+      <h2 id="secTitle"></h2>
+      <p class="lead" id="secSubtitle"></p>
+      <a class="demo-link" id="secDemoLink" target="_blank" rel="noopener" hidden>
+        Otwórz demo w nowej karcie ↗
+      </a>
+    </div>
+
+    <form id="qForm" novalidate></form>
+
+    <div class="nav-row">
+      <button class="btn" id="btnBack" type="button">Wstecz</button>
+      <button class="btn btn-primary" id="btnNext" type="button">Dalej</button>
+    </div>
+    <p class="err-summary" id="errSummary" hidden></p>
+  </section>
+
+  <!-- ============================ KONIEC ============================ -->
+  <section class="card" id="screenDone" hidden>
+    <h1>Dziękujemy. Serio.</h1>
+    <p class="lead" id="doneMsg"></p>
+    <div id="doneFallback" hidden>
+      <div class="panel panel-warn">
+        <strong>Ostatni krok:</strong> pobierz plik z odpowiedziami i odeślij go mailem.
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-primary" id="btnDownload" type="button">Pobierz odpowiedzi (JSON)</button>
+        <a class="btn" id="btnMail">Napisz maila</a>
+      </div>
+    </div>
+    <details class="raw">
+      <summary>Podejrzyj swoje odpowiedzi</summary>
+      <pre id="rawJson"></pre>
+    </details>
+  </section>
+
+</main>
+
+<footer class="wrap foot">
+  <span id="footContact"></span>
+</footer>
+
+<script src="assets/config.js"></script>
+<script src="assets/survey.js"></script>
+</body>
+</html>
