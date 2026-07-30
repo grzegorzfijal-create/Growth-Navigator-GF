@@ -5,6 +5,7 @@
   "description": "Ankieta ewaluacyjna dla marketerów + dashboard wyników (PMF, NPS, Van Westendorp, Gabor-Granger).",
   "scripts": {
     "test": "node test/metrics.test.mjs",
+    "build": "node tools/build-single-file.mjs",
     "start": "npx --yes http-server -p 8000 -c-1 ."
   }
 }

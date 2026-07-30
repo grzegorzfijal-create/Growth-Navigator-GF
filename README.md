@@ -80,6 +80,26 @@ npx vercel --prod          # albo netlify deploy --prod, albo GitHub Pages
 jeśli respondenci nie mają widzieć wyników, wdróż ankietę i dashboard osobno albo
 trzymaj `results.html` tylko lokalnie.
 
+### Wersja jednoplikowa
+
+```bash
+npm run build     # -> dist/ewaluacja.html (~95 kB, zero zewnętrznych zależności)
+```
+
+Ankieta + dashboard w jednym pliku HTML: działa z dysku, z załącznika w mailu
+i z dowolnego hostingu. Ankieta jest widokiem domyślnym, dashboard siedzi pod
+`#wyniki`, więc respondent z czystym linkiem nigdy nie trafi przypadkiem na wyniki
+(ale to nie jest zabezpieczenie - link do wyników jest w pasku u góry).
+
+`tools/build-single-file.mjs` tylko skleja pliki źródłowe, więc nie ma tu drugiej
+kopii kodu, która mogłaby się rozjechać. Po każdej zmianie w `assets/` lub
+w `index.html` / `results.html` uruchom `npm run build` ponownie.
+
+Jedno ograniczenie: jeśli opublikujesz ten plik jako Artifact na claude.ai,
+zapis do Arkusza Google nie zadziała (polityka bezpieczeństwa strony blokuje
+żądania na zewnętrzne adresy). Ankieta sama przełączy się wtedy na pobranie
+pliku JSON. Do realnego zbierania odpowiedzi wdróż na Vercela.
+
 ## 4. Zbieranie odpowiedzi - wybierz jedną drogę
 
 **A. Bez konfiguracji (domyślnie).** `SUBMIT.endpoint = ''`. Respondent na koniec pobiera
