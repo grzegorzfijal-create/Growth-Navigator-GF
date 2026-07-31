@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Ewaluacja MarkIQ - ankieta dla marketerów</title>
+<title>Ewaluacja Trend Alert - ankieta dla marketerów</title>
 <style>
 /* ---------------------------------------------------------------- podstawy */
 :root {
@@ -304,15 +304,14 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 
   <!-- ============================ INTRO ============================ -->
   <section class="card" id="screenIntro">
-    <h1>Pomóż nam zbudować narzędzie, którego realnie będziesz używać</h1>
+    <h1>Pomóż nam zbudować narzędzie, które da wartość.</h1>
     <p class="lead" id="introPitch"></p>
 
     <div class="panel">
-      <h3>Jak to działa</h3>
+      <h3>Co mam zrobić?</h3>
       <ol class="steps">
-        <li>Otwierasz demo aplikacji w nowej karcie i klikasz przez chwilę.</li>
-        <li>Wykonujesz <strong>3 konkretne zadania</strong> - to najważniejsza część.</li>
-        <li>Odpowiadasz na pytania o wartość, użycie i cenę.</li>
+        <li>Otwierasz demo aplikacji w nowej karcie i zacznij klikać.</li>
+        <li>Odpowiadasz na pytania a my jesteśmy Ci wdzięczni za szczery feedback.</li>
       </ol>
       <p class="muted">
         Czas: <strong id="introTime"></strong>. Odpowiedzi zapisują się w Twojej przeglądarce -
@@ -321,9 +320,8 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
     </div>
 
     <div class="panel panel-warn">
-      <strong>Jedna prośba:</strong> nie bądź miły. Jeśli coś jest bezużyteczne,
-      niezrozumiałe albo za drogie - napisz to wprost. Grzeczny feedback jest dla nas
-      bezwartościowy i kosztuje nas miesiące pracy w złym kierunku.
+      <strong>Jedna prośba:</strong> Nie bądź miły/a. Jeśli coś jest bezużyteczne
+      lub niezrozumiałe - napisz to wprost. Cenimy konstruktywną krytykę.
     </div>
 
     <label class="check consent">
@@ -426,14 +424,19 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
    ========================================================================== */
 
 const PRODUCT = {
-  name: 'MarkIQ',
+  name: 'Trend Alert',
   demoUrl: 'https://markiq-demo.vercel.app/',
 
-  // Jednozdaniowy opis, który zobaczy marketer PRZED wejściem do dema.
+  // Opis, który zobaczy marketer PRZED wejściem do dema.
   // Trzymaj neutralnie - nie sprzedawaj, bo zaburzysz odpowiedzi o wartości.
   pitch:
-    'Narzędzie, które ma pomagać marketerom analizować dane z kampanii ' +
-    'i szybciej podejmować decyzje o budżecie i treściach.',
+    'Chcielibyśmy, aby Trend Alert pomagał marketerom uporządkować i analizować ' +
+    'rosnącą liczbę danych oraz raportów. Gdy organizacja nie dysponuje dedykowanym ' +
+    'zespołem analitycznym, zestawianie danych sprzedażowych, wyników kampanii ' +
+    'i raportów z wielu paneli, zapisanych w różnych formatach i opisanych odmienną ' +
+    'nomenklaturą, staje się dużym wyzwaniem. Narzędzie ma integrować te informacje ' +
+    'w jednym miejscu, ujednolicać je i umożliwiać podejmowanie decyzji na podstawie ' +
+    'pełnego obrazu dostępnych danych.',
 
   // MODUŁY / FUNKCJE do oceny wartości.
   // ZMIEŃ NA PRAWDZIWE NAZWY Z APLIKACJI (te są przykładowe).
@@ -521,7 +524,7 @@ const SECTIONS = [
       },
       {
         id: 'decision_power', type: 'single', required: true,
-        label: 'Czy decydujesz o zakupie narzędzi marketingowych?',
+        label: 'Czy decydujesz o zakupie narzędzi marketingowych, aplikacji czy subskrypcji?',
         options: [
           'Tak, decyduję samodzielnie',
           'Rekomenduję, decyzję podejmuje ktoś inny',
@@ -539,6 +542,22 @@ const SECTIONS = [
         label: 'Typ organizacji',
         options: ['B2B SaaS / tech', 'E-commerce', 'Agencja marketingowa', 'Usługi B2B', 'Retail / FMCG', 'Edukacja / NGO / publiczne'],
         allowOther: true,
+      },
+      {
+        id: 'reports_count', type: 'number', required: true, unit: 'raportów / źródeł',
+        label: 'Jaka jest szacunkowa ilość stałych raportów/źródeł danych/paneli, '
+          + 'w których znajdują się informacje ważne dla marek/produktów, którymi zarządzasz?',
+        hint: 'Podaj przybliżoną liczbę.',
+      },
+      {
+        id: 'analysis_capability', type: 'single', required: true,
+        label: 'Jak oceniasz swoje możliwości w zakresie analizy raportów?',
+        options: [
+          'Regularnie i szczegółowo analizuję wszystkie ważne raporty.',
+          'Analizuję wszystkie ważne raporty, ale zawsze brakuje mi na to czasu.',
+          'Nie jestem w stanie analizować wszystkich ważnych raportów.',
+          'Analizuję tylko część raportów ze względu na ograniczony czas.',
+        ],
       },
       {
         id: 'channels', type: 'multi', required: true,
@@ -1447,10 +1466,11 @@ const M = (function () {
       return wrap;
     }
 
-    /* --- kwota --- */
-    if (q.type === 'money') {
+    /* --- kwota / dowolna liczba --- */
+    if (q.type === 'money' || q.type === 'number') {
+      const unit = q.type === 'money' ? `${PRODUCT.currency} / mies.` : (q.unit || '');
       const inp = el('input', {
-        type: 'number', min: '0', step: '10', inputmode: 'numeric',
+        type: 'number', min: '0', step: q.type === 'money' ? '10' : '1', inputmode: 'numeric',
         placeholder: '0', value: (val ?? ''),
       });
       inp.addEventListener('input', () => {
@@ -1458,7 +1478,7 @@ const M = (function () {
         save(); clearErr(wrap);
       });
       wrap.appendChild(el('div', { class: 'money-row' }, [
-        inp, el('span', { class: 'money-suffix', text: `${PRODUCT.currency} / mies.` }),
+        inp, unit ? el('span', { class: 'money-suffix', text: unit }) : null,
       ]));
       return wrap;
     }
@@ -1539,6 +1559,9 @@ const M = (function () {
         return null;
       case 'money':
         if (typeof v !== 'number' || Number.isNaN(v)) return 'Podaj kwotę (0 jeśli nie zapłaciłbyś nic).';
+        return null;
+      case 'number':
+        if (typeof v !== 'number' || Number.isNaN(v)) return 'Podaj przybliżoną liczbę.';
         return null;
       case 'matrix':
         return null;
@@ -1920,6 +1943,7 @@ const M = (function () {
     const modStats = M.moduleValue(rows, mods);
     const fits = M.nums(rows.map((r) => r.__fit));
     const fitMean = M.round(M.mean(fits), 0);
+    const reportCounts = M.nums(rows.map((r) => M.get(r, 'reports_count')));
 
     const freq = M.distribution(rows, 'usage_freq', Object.keys(M.FREQ_SCORE));
     const wouldUseWeekly = freq.items
@@ -2038,6 +2062,25 @@ const M = (function () {
     </section>
 
     <section class="card">
+      <h2 class="subhead">Skala problemu</h2>
+      <p class="lead">Ile raportów mają na głowie i czy nadążają z ich analizą.</p>
+      <div class="kpis">
+        ${kpi('Raportów / źródeł (mediana)', fmt(M.round(M.median(reportCounts), 0)),
+          reportCounts.length
+            ? `min ${Math.min(...reportCounts)}, maks. ${Math.max(...reportCounts)}`
+            : 'brak odpowiedzi')}
+        ${kpi('Nie nadążają z analizą', M.round(M.pct(rows.filter((r) => {
+            const a = M.get(r, 'analysis_capability') || '';
+            return a.startsWith('Nie jestem w stanie') || a.startsWith('Analizuję tylko część');
+          }).length, n), 0) + '%', 'nie analizują wszystkich ważnych raportów')}
+      </div>
+      <h3 style="margin-top:22px">Możliwości analizy raportów</h3>
+      ${bars(M.distribution(rows, 'analysis_capability').items)}
+      <h3 style="margin-top:22px">Liczba raportów / źródeł danych</h3>
+      ${bars(M.distribution(rows, 'reports_count').items)}
+    </section>
+
+    <section class="card">
       <h2 class="subhead">Użycie i blokery wdrożenia</h2>
       <h3>Jak często by używali</h3>
       ${bars(freq.items)}
@@ -2055,9 +2098,10 @@ const M = (function () {
     <section class="card">
       <h2 class="subhead">Kto tego chce najbardziej</h2>
       <p class="lead">Segmenty posortowane po fit score. Tu widać, do kogo iść pierwszy.</p>
-      ${['role', 'segment', 'company_size', 'decision_power', 'monthly_adspend'].map((qid) => {
+      ${['role', 'segment', 'company_size', 'decision_power', 'monthly_adspend', 'analysis_capability'].map((qid) => {
         const label = { role: 'Rola', segment: 'Typ organizacji', company_size: 'Wielkość firmy',
-          decision_power: 'Wpływ na zakup', monthly_adspend: 'Budżet mediowy' }[qid];
+          decision_power: 'Wpływ na zakup', monthly_adspend: 'Budżet mediowy',
+          analysis_capability: 'Możliwości analizy raportów' }[qid];
         const segs = M.segments(rows, qid, tiers, mods);
         return `<h3 style="margin-top:22px">${label}</h3>
           ${table(['Segment', 'n', 'Fit score', '„Bardzo rozcz."', 'Mediana WTP'],
@@ -2164,6 +2208,10 @@ const M = (function () {
       const answers = {
         role: pick(roles, i), segment: pick(segs, i), company_size: pick(sizes, i),
         decision_power: i % 2 ? 'Tak, decyduję samodzielnie' : 'Współdecyduję z zespołem',
+        reports_count: strong ? 8 + (i % 5) * 4 : 3 + (i % 3),
+        analysis_capability: strong
+          ? 'Analizuję tylko część raportów ze względu na ograniczony czas.'
+          : 'Regularnie i szczegółowo analizuję wszystkie ważne raporty.',
         channels: ['Google Ads', 'Meta Ads'], monthly_adspend: '20-100 tys. PLN',
         tools_current: ['Excel / Google Sheets', 'GA4'], monthly_martech_spend: '1-5 tys. PLN',
         pain_today: 'Składanie danych z paneli do arkusza zajmuje mi kilka godzin w każdy poniedziałek.',

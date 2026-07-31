@@ -252,10 +252,11 @@
       return wrap;
     }
 
-    /* --- kwota --- */
-    if (q.type === 'money') {
+    /* --- kwota / dowolna liczba --- */
+    if (q.type === 'money' || q.type === 'number') {
+      const unit = q.type === 'money' ? `${PRODUCT.currency} / mies.` : (q.unit || '');
       const inp = el('input', {
-        type: 'number', min: '0', step: '10', inputmode: 'numeric',
+        type: 'number', min: '0', step: q.type === 'money' ? '10' : '1', inputmode: 'numeric',
         placeholder: '0', value: (val ?? ''),
       });
       inp.addEventListener('input', () => {
@@ -263,7 +264,7 @@
         save(); clearErr(wrap);
       });
       wrap.appendChild(el('div', { class: 'money-row' }, [
-        inp, el('span', { class: 'money-suffix', text: `${PRODUCT.currency} / mies.` }),
+        inp, unit ? el('span', { class: 'money-suffix', text: unit }) : null,
       ]));
       return wrap;
     }
@@ -344,6 +345,9 @@
         return null;
       case 'money':
         if (typeof v !== 'number' || Number.isNaN(v)) return 'Podaj kwotę (0 jeśli nie zapłaciłbyś nic).';
+        return null;
+      case 'number':
+        if (typeof v !== 'number' || Number.isNaN(v)) return 'Podaj przybliżoną liczbę.';
         return null;
       case 'matrix':
         return null;

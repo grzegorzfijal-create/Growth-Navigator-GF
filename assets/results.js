@@ -192,6 +192,7 @@
     const modStats = M.moduleValue(rows, mods);
     const fits = M.nums(rows.map((r) => r.__fit));
     const fitMean = M.round(M.mean(fits), 0);
+    const reportCounts = M.nums(rows.map((r) => M.get(r, 'reports_count')));
 
     const freq = M.distribution(rows, 'usage_freq', Object.keys(M.FREQ_SCORE));
     const wouldUseWeekly = freq.items
@@ -310,6 +311,25 @@
     </section>
 
     <section class="card">
+      <h2 class="subhead">Skala problemu</h2>
+      <p class="lead">Ile raportów mają na głowie i czy nadążają z ich analizą.</p>
+      <div class="kpis">
+        ${kpi('Raportów / źródeł (mediana)', fmt(M.round(M.median(reportCounts), 0)),
+          reportCounts.length
+            ? `min ${Math.min(...reportCounts)}, maks. ${Math.max(...reportCounts)}`
+            : 'brak odpowiedzi')}
+        ${kpi('Nie nadążają z analizą', M.round(M.pct(rows.filter((r) => {
+            const a = M.get(r, 'analysis_capability') || '';
+            return a.startsWith('Nie jestem w stanie') || a.startsWith('Analizuję tylko część');
+          }).length, n), 0) + '%', 'nie analizują wszystkich ważnych raportów')}
+      </div>
+      <h3 style="margin-top:22px">Możliwości analizy raportów</h3>
+      ${bars(M.distribution(rows, 'analysis_capability').items)}
+      <h3 style="margin-top:22px">Liczba raportów / źródeł danych</h3>
+      ${bars(M.distribution(rows, 'reports_count').items)}
+    </section>
+
+    <section class="card">
       <h2 class="subhead">Użycie i blokery wdrożenia</h2>
       <h3>Jak często by używali</h3>
       ${bars(freq.items)}
@@ -327,9 +347,10 @@
     <section class="card">
       <h2 class="subhead">Kto tego chce najbardziej</h2>
       <p class="lead">Segmenty posortowane po fit score. Tu widać, do kogo iść pierwszy.</p>
-      ${['role', 'segment', 'company_size', 'decision_power', 'monthly_adspend'].map((qid) => {
+      ${['role', 'segment', 'company_size', 'decision_power', 'monthly_adspend', 'analysis_capability'].map((qid) => {
         const label = { role: 'Rola', segment: 'Typ organizacji', company_size: 'Wielkość firmy',
-          decision_power: 'Wpływ na zakup', monthly_adspend: 'Budżet mediowy' }[qid];
+          decision_power: 'Wpływ na zakup', monthly_adspend: 'Budżet mediowy',
+          analysis_capability: 'Możliwości analizy raportów' }[qid];
         const segs = M.segments(rows, qid, tiers, mods);
         return `<h3 style="margin-top:22px">${label}</h3>
           ${table(['Segment', 'n', 'Fit score', '„Bardzo rozcz."', 'Mediana WTP'],
@@ -436,6 +457,10 @@
       const answers = {
         role: pick(roles, i), segment: pick(segs, i), company_size: pick(sizes, i),
         decision_power: i % 2 ? 'Tak, decyduję samodzielnie' : 'Współdecyduję z zespołem',
+        reports_count: strong ? 8 + (i % 5) * 4 : 3 + (i % 3),
+        analysis_capability: strong
+          ? 'Analizuję tylko część raportów ze względu na ograniczony czas.'
+          : 'Regularnie i szczegółowo analizuję wszystkie ważne raporty.',
         channels: ['Google Ads', 'Meta Ads'], monthly_adspend: '20-100 tys. PLN',
         tools_current: ['Excel / Google Sheets', 'GA4'], monthly_martech_spend: '1-5 tys. PLN',
         pain_today: 'Składanie danych z paneli do arkusza zajmuje mi kilka godzin w każdy poniedziałek.',

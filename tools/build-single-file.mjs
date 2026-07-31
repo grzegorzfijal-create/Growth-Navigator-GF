@@ -83,7 +83,7 @@ const router = `
    przeglądarka otwierająca plik z dysku (file://, bez nagłówka HTTP) czyta
    UTF-8 jako latin-1 i polskie znaki się rozsypują. */
 const html = `<meta charset="utf-8">
-<title>Ewaluacja MarkIQ - ankieta dla marketerów</title>
+<title>Ewaluacja Trend Alert - ankieta dla marketerów</title>
 <style>
 ${css}
 /* --- dodatki tylko dla wersji jednoplikowej --- */

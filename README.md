@@ -1,4 +1,4 @@
-# Ewaluacja MarkIQ - aplikacja do zbierania feedbacku od marketerów
+# Ewaluacja Trend Alert - aplikacja do zbierania feedbacku od marketerów
 
 Dwie strony, zero zależności, zero backendu (opcjonalnie arkusz Google):
 
@@ -28,9 +28,9 @@ Otwórz `assets/config.js` i zmień **tylko sekcję `PRODUCT`**:
 
 ```js
 const PRODUCT = {
-  name: 'MarkIQ',
+  name: 'Trend Alert',
   demoUrl: 'https://markiq-demo.vercel.app/',
-  pitch: '...',        // jedno neutralne zdanie - nie sprzedawaj, zaburzysz wyniki
+  pitch: '...',        // neutralny opis - nie sprzedawaj, zaburzysz wyniki
   modules: [...],      // <-- PRAWDZIWE nazwy funkcji z aplikacji
   tasks: [...],        // <-- 3 realne ścieżki do wykonania w demie
   priceTiers: [99, 199, 399, 799, 1499],

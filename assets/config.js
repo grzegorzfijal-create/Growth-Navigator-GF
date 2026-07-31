@@ -7,14 +7,19 @@
    ========================================================================== */
 
 const PRODUCT = {
-  name: 'MarkIQ',
+  name: 'Trend Alert',
   demoUrl: 'https://markiq-demo.vercel.app/',
 
-  // Jednozdaniowy opis, który zobaczy marketer PRZED wejściem do dema.
+  // Opis, który zobaczy marketer PRZED wejściem do dema.
   // Trzymaj neutralnie - nie sprzedawaj, bo zaburzysz odpowiedzi o wartości.
   pitch:
-    'Narzędzie, które ma pomagać marketerom analizować dane z kampanii ' +
-    'i szybciej podejmować decyzje o budżecie i treściach.',
+    'Chcielibyśmy, aby Trend Alert pomagał marketerom uporządkować i analizować ' +
+    'rosnącą liczbę danych oraz raportów. Gdy organizacja nie dysponuje dedykowanym ' +
+    'zespołem analitycznym, zestawianie danych sprzedażowych, wyników kampanii ' +
+    'i raportów z wielu paneli, zapisanych w różnych formatach i opisanych odmienną ' +
+    'nomenklaturą, staje się dużym wyzwaniem. Narzędzie ma integrować te informacje ' +
+    'w jednym miejscu, ujednolicać je i umożliwiać podejmowanie decyzji na podstawie ' +
+    'pełnego obrazu dostępnych danych.',
 
   // MODUŁY / FUNKCJE do oceny wartości.
   // ZMIEŃ NA PRAWDZIWE NAZWY Z APLIKACJI (te są przykładowe).
@@ -102,7 +107,7 @@ const SECTIONS = [
       },
       {
         id: 'decision_power', type: 'single', required: true,
-        label: 'Czy decydujesz o zakupie narzędzi marketingowych?',
+        label: 'Czy decydujesz o zakupie narzędzi marketingowych, aplikacji czy subskrypcji?',
         options: [
           'Tak, decyduję samodzielnie',
           'Rekomenduję, decyzję podejmuje ktoś inny',
@@ -120,6 +125,22 @@ const SECTIONS = [
         label: 'Typ organizacji',
         options: ['B2B SaaS / tech', 'E-commerce', 'Agencja marketingowa', 'Usługi B2B', 'Retail / FMCG', 'Edukacja / NGO / publiczne'],
         allowOther: true,
+      },
+      {
+        id: 'reports_count', type: 'number', required: true, unit: 'raportów / źródeł',
+        label: 'Jaka jest szacunkowa ilość stałych raportów/źródeł danych/paneli, '
+          + 'w których znajdują się informacje ważne dla marek/produktów, którymi zarządzasz?',
+        hint: 'Podaj przybliżoną liczbę.',
+      },
+      {
+        id: 'analysis_capability', type: 'single', required: true,
+        label: 'Jak oceniasz swoje możliwości w zakresie analizy raportów?',
+        options: [
+          'Regularnie i szczegółowo analizuję wszystkie ważne raporty.',
+          'Analizuję wszystkie ważne raporty, ale zawsze brakuje mi na to czasu.',
+          'Nie jestem w stanie analizować wszystkich ważnych raportów.',
+          'Analizuję tylko część raportów ze względu na ograniczony czas.',
+        ],
       },
       {
         id: 'channels', type: 'multi', required: true,
