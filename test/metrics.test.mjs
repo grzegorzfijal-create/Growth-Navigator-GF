@@ -188,6 +188,28 @@ test('braki w odpowiedziach nie wywalają wyniku', () => {
   assert.equal(typeof M.fitScore(r({ nps: 8 }), [100], [{ id: 'a', label: 'A' }]), 'number');
   assert.equal(M.fitScore(r({}), [100], [{ id: 'a', label: 'A' }]), null);
 });
+test('krótka ankieta: liczy bez NPS i bez macierzy ważności', () => {
+  const mods = [{ id: 'a', label: 'A' }];
+  const short = r({
+    pmf: 'Bardzo rozczarowany', usage_freq: 'Codziennie',
+    gg_intent: { p100: 2, p500: 2 }, must_have_top3: ['A', 'B', 'C'],
+  });
+  assert.equal(M.fitScore(short, [100, 500], mods), 100);
+});
+test('krótka i długa wersja dają porównywalny wynik', () => {
+  const mods = [{ id: 'a', label: 'A' }];
+  const tiers = [100, 500];
+  const common = {
+    pmf: 'Trochę rozczarowany', usage_freq: 'Raz w tygodniu',
+    gg_intent: { p100: 2, p500: 0 }, must_have_top3: ['A'],
+  };
+  const short = M.fitScore(r(common), tiers, mods);
+  const long = M.fitScore(r(Object.assign({}, common, {
+    nps: 7, module_importance: { a: 2 },
+  })), tiers, mods);
+  assert.ok(Math.abs(short - long) <= 12,
+    `wyniki nie powinny się rozjeżdżać: krótka ${short}, długa ${long}`);
+});
 
 console.log('\nJakość odpowiedzi');
 test('wykrywa pośpiech, lakoniczność i straightlining', () => {

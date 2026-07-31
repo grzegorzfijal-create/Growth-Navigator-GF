@@ -270,17 +270,20 @@ const M = (function () {
     'Nie dotyczy, i tak nie zamierzam go używać': 0,
   };
 
+  /* Wagi są znormalizowane przez sumę faktycznie użytych składowych, więc wynik
+     jest porównywalny także dla starszych odpowiedzi z dłuższej wersji ankiety
+     (te miały jeszcze NPS i macierz ważności modułów). */
   function fitScore(r, tiers, modules) {
     const parts = [];
     const add = (val, weight) => { if (val != null) parts.push([val, weight]); };
 
     const p = PMF_SCORE[A(r, 'pmf')];
-    add(p == null ? null : p, 0.25);
+    add(p == null ? null : p, 0.35);
 
     const f = FREQ_SCORE[A(r, 'usage_freq')];
-    add(f == null ? null : f, 0.25);
+    add(f == null ? null : f, 0.30);
 
-    const n = A(r, 'nps');
+    const n = A(r, 'nps');                       // tylko stare odpowiedzi
     add(typeof n === 'number' ? n * 10 : null, 0.15);
 
     /* gotowość do zapłaty: najwyższy próg z odpowiedzią "Tak".
@@ -291,11 +294,18 @@ const M = (function () {
       let topYes = 0;
       answeredTiers.forEach((t) => { if (gg[`p${t}`] === 2) topYes = Math.max(topYes, t); });
       const maxTier = Math.max(...tiers);
-      add(topYes ? Math.min(100, (Math.log(topYes) / Math.log(maxTier)) * 100) : 0, 0.2);
+      add(topYes ? Math.min(100, (Math.log(topYes) / Math.log(maxTier)) * 100) : 0, 0.25);
     }
 
+    /* Wartość funkcji: w krótkiej ankiecie mamy tylko wybór "za co zapłacę",
+       w starszych odpowiedziach była pełna macierz ważności. */
     const imp = nums(modules.map((m) => (A(r, 'module_importance') || {})[m.id]));
-    add(imp.length ? (mean(imp) / 4) * 100 : null, 0.15);
+    if (imp.length) {
+      add((mean(imp) / 4) * 100, 0.15);
+    } else {
+      const picks = A(r, 'must_have_top3');
+      if (Array.isArray(picks)) add(Math.min(100, (picks.length / 3) * 100), 0.10);
+    }
 
     const wsum = parts.reduce((a, [, w]) => a + w, 0);
     if (!wsum) return null;
@@ -306,10 +316,14 @@ const M = (function () {
   function quality(r) {
     const flags = [];
     const dur = r.durationSeconds;
-    if (typeof dur === 'number' && dur < 240) flags.push('szybkie wypełnienie');
+    /* Próg dobrany do krótkiej wersji ankiety: poniżej 2,5 minuty nie da się
+       obejrzeć dema i wykonać zadania, więc odpowiedzi są zgadywane. */
+    if (typeof dur === 'number' && dur < 150) flags.push('szybkie wypełnienie');
 
-    const texts = ['pain_today', 'what_is_it', 'first_impression_neg', 'missing_features', 'nps_reason']
-      .map((id) => (A(r, id) || '').trim());
+    const texts = ['what_is_it', 'first_impression_neg', 'missing_features', 'change_1',
+      'pain_today', 'nps_reason']                       // dwa ostatnie tylko w starych odpowiedziach
+      .map((id) => (A(r, id) || '').trim())
+      .filter((t, i) => i < 4 || t.length);
     const avgLen = mean(texts.map((t) => t.length)) || 0;
     if (avgLen < 25) flags.push('krótkie odpowiedzi opisowe');
 

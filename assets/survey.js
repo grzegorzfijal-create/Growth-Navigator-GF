@@ -57,7 +57,9 @@
   function resolveSections() {
     return SECTIONS.map((sec) => {
       const out = Object.assign({}, sec);
-      out.questions = sec.questions === 'GENERATED_TASKS' ? buildTaskQuestions() : sec.questions.slice();
+      /* { type: 'tasks' } rozwija się w miejscu, więc zadania mogą sąsiadować
+         w jednej sekcji ze zwykłymi pytaniami. */
+      out.questions = sec.questions.flatMap((q) => (q.type === 'tasks' ? buildTaskQuestions() : [q]));
       out.questions = out.questions.map((q) => {
         const r = Object.assign({}, q);
         if (r.rows === 'MODULES') r.rows = PRODUCT.modules;

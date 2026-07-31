@@ -7,18 +7,26 @@ Dwie strony, zero zależności, zero backendu (opcjonalnie arkusz Google):
 | `index.html` | Ankieta dla marketera. To wysyłasz linkiem. |
 | `results.html` | Dashboard: wrzucasz odpowiedzi, dostajesz policzone wskaźniki. Tylko dla Ciebie. |
 
-Ankieta nie pyta „czy Ci się podoba". Prowadzi marketera przez **3 zadania w demie**,
-a potem mierzy cztery rzeczy, które chciałeś wiedzieć:
+**16 pytań, 4 sekcje, ok. 5 minut.** Ankieta nie pyta „czy Ci się podoba" - każe wykonać
+**jedno konkretne zadanie w demie**, a potem mierzy cztery rzeczy, które chciałeś wiedzieć:
 
 | Twoje pytanie | Jak jest mierzone |
 |---|---|
-| Czy to jest im przydatne? | Sean Ellis PMF (% „bardzo rozczarowany", próg 40%) + realny wynik zadań |
-| Na ile by z tego korzystali? | Deklarowana częstotliwość + moment w procesie + co by zastąpili + oszczędzony czas |
-| Ile zapłaciliby miesięcznie? | Van Westendorp (4 pytania → zakres cen) **i** Gabor-Granger (progi → krzywa przychodu) |
-| Co zmienić? | 3 uszeregowane zmiany + blokery wdrożenia + braki + friction log z zadań |
+| Czy to jest im przydatne? | Sean Ellis PMF (% „bardzo rozczarowany", próg 40%) + realny wynik zadania |
+| Na ile by z tego korzystali? | Deklarowana częstotliwość + blokery wdrożenia |
+| Ile zapłaciliby miesięcznie? | Gabor-Granger: 5 progów cenowych → krzywa popytu i przychodu |
+| Co zmienić? | Najważniejsza zmiana + czego brakuje + co zirytowało + friction log z zadania |
 
-Dodatkowo: NPS, UMUX-Lite (używalność w skali SUS), SEQ dla każdego zadania,
-segmentacja po roli/wielkości firmy oraz flagi jakości odpowiedzi (kto klikał na odczep się).
+Dodatkowo: SEQ i success rate dla zadania, kwalifikacja ICP (liczba raportów, czy
+nadążają z analizą), segmentacja po fit score oraz flagi jakości odpowiedzi
+(kto klikał na odczep się).
+
+Kwestionariusz był kiedyś dłuższy (51 pól, ~10 min) i został przycięty, bo przy takiej
+długości nikt go nie kończy. Wypadły: Van Westendorp, NPS, UMUX-Lite, macierz ważności
+funkcji, 2 z 3 zadań i pytania kontekstowe. Kod tych wskaźników **został** w `metrics.js`
+wraz z testami, a dashboard renderuje ich sekcje tylko wtedy, gdy w danych są odpowiedzi -
+więc starsze, dłuższe odpowiedzi nadal liczą się poprawnie, a przywrócenie pytania to
+dopisanie go z powrotem do `config.js`.
 
 ---
 
@@ -31,8 +39,8 @@ const PRODUCT = {
   name: 'Trend Alert',
   demoUrl: 'https://markiq-demo.vercel.app/',
   pitch: '...',        // neutralny opis - nie sprzedawaj, zaburzysz wyniki
-  modules: [...],      // <-- PRAWDZIWE nazwy funkcji z aplikacji
-  tasks: [...],        // <-- 3 realne ścieżki do wykonania w demie
+  modules: [...],      // <-- PRAWDZIWE nazwy funkcji z aplikacji (5-7 pozycji)
+  tasks: [...],        // <-- JEDNA realna ścieżka do wykonania w demie
   priceTiers: [99, 199, 399, 799, 1499],
 };
 ```
@@ -44,9 +52,10 @@ marketingowego. Wejdź do dema i popraw je na to, co tam faktycznie jest.
 
 Zasady, jeśli będziesz je przepisywał:
 
-- **Moduły**: 4-8 pozycji, nazwane językiem marketera, nie nazwami z kodu.
-- **Zadania**: każde musi mieć jeden weryfikowalny rezultat („znajdź X", „wyeksportuj Y").
+- **Moduły**: 5-7 pozycji, nazwane językiem marketera, nie nazwami z kodu.
+- **Zadanie**: musi mieć jeden weryfikowalny rezultat („znajdź X", „wyeksportuj Y").
   Zadanie bez rezultatu daje bezwartościowe dane. Nie pisz „rozejrzyj się".
+  Jest tylko jedno, więc wybierz to najbardziej reprezentatywne dla obietnicy produktu.
 - **Progi cenowe**: rozstaw je wokół ceny, którą realnie rozważasz - to one wyznaczają
   krzywą przychodu.
 
@@ -62,7 +71,7 @@ python3 -m http.server 8000     # albo: npx http-server -p 8000
 # dashboard: http://localhost:8000/results.html  → „Pokaż na danych przykładowych"
 ```
 
-Testy wskaźników (21 przypadków, wartości policzone ręcznie):
+Testy wskaźników (23 przypadki, wartości policzone ręcznie):
 
 ```bash
 npm test        # albo: node test/metrics.test.mjs
@@ -83,7 +92,7 @@ trzymaj `results.html` tylko lokalnie.
 ### Wersja jednoplikowa
 
 ```bash
-npm run build     # -> dist/ewaluacja.html (~95 kB, zero zewnętrznych zależności)
+npm run build     # -> dist/ewaluacja.html (~91 kB, zero zewnętrznych zależności)
 ```
 
 Ankieta + dashboard w jednym pliku HTML: działa z dysku, z załącznika w mailu
@@ -145,7 +154,7 @@ Wiadomość, która działa lepiej niż „daj feedback" - link z tagiem źród�
 > Cześć [imię], buduję narzędzie do analizy wyników kampanii i zanim pójdę dalej,
 > chcę wiedzieć, czy to w ogóle ma sens dla kogoś, kto robi to zawodowo.
 >
-> Mam do Ciebie prośbę o 10 minut: klikniesz przez demo, wykonasz 3 krótkie zadania
+> Mam do Ciebie prośbę o 5 minut: klikniesz przez demo, wykonasz jedno krótkie zadanie
 > i powiesz mi wprost, co jest bezużyteczne. Interesuje mnie krytyka, nie komplementy -
 > na tym etapie miły feedback kosztuje mnie miesiące pracy w złym kierunku.
 >
@@ -159,7 +168,7 @@ Ostatnie zdanie realnie podnosi liczbę wypełnień - i zobowiązuje Cię do odp
 
 Kolejność jest ważna. Nie zaczynaj od ceny.
 
-**1. Czy zadania się udały?** (sekcja „Czy to działa w praktyce")
+**1. Czy zadanie się udało?** (sekcja „Czy to działa w praktyce")
 Jeśli success rate < 70% albo SEQ < 5, wszystkie liczby o wartości i cenie są o produkcie,
 którego respondenci nie umieli obsłużyć. Napraw UX i powtórz badanie. To najczęstszy
 błąd w interpretacji takich badań.
@@ -178,16 +187,17 @@ przy zerowym „zapłaciłbym" znaczy „fajne, ale nie moimi pieniędzmi". Budu
 co ma jedno i drugie.
 
 **5. Ile?** Dopiero teraz.
-- **PMC-PME** = zakres, w którym cena nie zabija sprzedaży.
-- **IPP** = punkt, w którym „drogo" zaczyna wygrywać z „okazja"; zwykle blisko ceny rynkowej.
-- **OPP** = najmniej odrzuceń z powodu ceny.
-- **Krzywa przychodu (Gabor-Granger)** = jedyny wskaźnik, który patrzy na przychód,
-  a nie na komfort respondenta. Zwykle wypada wyżej niż intuicja. Zacznij od niego.
-- Tyldy (`~143`) i żółty panel oznaczają, że odpowiedzi cenowe rozjechały się na osobne
-  grupy i przecięcie wypadło w przedziale, o którym nikt się nie wypowiedział. To nie
-  jest cena - to sygnał, że masz dwa segmenty cenowe. Przefiltruj po segmencie.
+- **Krzywa przychodu (Gabor-Granger)** patrzy na przychód, a nie na komfort respondenta:
+  cena maksymalizująca przychód zwykle wypada wyżej, niż podpowiada intuicja.
+  Nie czytaj samego „ilu powiedziało tak" - najtańszy próg zawsze wygra to porównanie.
 - Deklarowana gotowość do zapłaty jest **zawsze** zawyżona (dlatego „może" liczy się
   z wagą 0,4). Traktuj to jako ranking wariantów, nie jak cennik.
+- Zestaw wynik z kolumną „Wpływ na zakup": wysoka gotowość u osób bez decyzyjności
+  to nie jest popyt.
+- Jeśli wrzucisz do dashboardu starsze odpowiedzi z pytaniami Van Westendorpa,
+  sekcja z krzywymi i punktami PMC/OPP/IPP/PME pojawi się automatycznie. Tylda (`~143`)
+  przy cenie oznacza przecięcie wyliczone w przedziale, o którym nikt się nie wypowiedział -
+  to sygnał dwóch segmentów cenowych, nie cena.
 
 **6. Co robić.** Sekcja „Co zmienić" jest posortowana od osób najlepiej dopasowanych.
 Uwaga kogoś z fit score 85 jest warta dziesięć razy więcej niż uwaga kogoś z 15 -

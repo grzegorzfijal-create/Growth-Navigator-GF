@@ -204,6 +204,22 @@
 
     const tone = (v, good, mid) => (v == null ? '' : v >= good ? 'good' : (v >= mid ? 'mid' : 'bad'));
 
+    /* Ankieta jest krótsza niż kiedyś, a stare odpowiedzi mają więcej pól.
+       Bloki raportu renderujemy tylko wtedy, gdy ktokolwiek na dane pytanie
+       odpowiedział - inaczej dashboard pokazywałby puste sekcje. */
+    const has = (qid) => rows.some((r) => {
+      const v = M.get(r, qid);
+      return Array.isArray(v) ? v.length > 0 : (v != null && v !== '');
+    });
+    const When = (qid, html) => (has(qid) ? html : '');
+
+    /* Najwyższy próg cenowy, przy którym respondent powiedział wprost "Tak". */
+    const topYesPrice = (r) => {
+      const gg = M.get(r, 'gg_intent') || {};
+      const yes = tiers.filter((t) => gg[`p${t}`] === 2);
+      return yes.length ? Math.max(...yes) : null;
+    };
+
     /* --- decyzja: jedno zdanie na górze --- */
     const verdictParts = [];
     if (pmf) verdictParts.push(`${pmf.veryDisappointed}% „bardzo rozczarowanych" (próg fitu: 40%)`);
@@ -224,25 +240,30 @@
       <div class="kpis">
         ${kpi('Product-Market Fit', pmf ? pmf.veryDisappointed + '%' : '–',
               pmf ? `„bardzo rozczarowany" · ${pmf.verdict}` : '', pmf ? tone(pmf.veryDisappointed, 40, 25) : '')}
-        ${kpi('NPS', nps ? nps.score : '–',
-              nps ? `${nps.promoters}% prom. / ${nps.detractors}% detr.` : '', nps ? tone(nps.score, 30, 0) : '')}
         ${kpi('Fit score (śr.)', fitMean == null ? '–' : fitMean,
               'złożony wskaźnik 0-100', tone(fitMean, 60, 40))}
         ${kpi('Użycie ≥ 1x/tydz.', M.round(M.pct(wouldUseWeekly, n), 0) + '%',
               `${wouldUseWeekly} z ${n} osób`, tone(M.pct(wouldUseWeekly, n), 50, 30))}
-        ${kpi('UMUX-Lite (SUS)', umux ? umux.susEquivalent : '–',
-              umux ? `benchmark 68 · łatwość ${umux.ease}/7` : '', umux ? tone(umux.susEquivalent, 68, 50) : '')}
+        ${taskStats.length ? kpi('Zadanie wykonane', taskStats[0].successOrSlow + '%',
+              `sukces bez zastrzeżeń: ${taskStats[0].successRate}% · SEQ ${fmt(taskStats[0].seqMean)}/7`,
+              tone(taskStats[0].successOrSlow, 70, 50)) : ''}
+        ${gg ? kpi('Cena maks. przychodu', gg.revenueOptimalPrice + ' ' + PRODUCT.currency,
+              'z krzywej Gabor-Granger') : ''}
         ${kpi('Chcą pilotażu', pilots, `${emails} zostawiło e-mail`, tone(M.pct(pilots, n), 40, 20))}
+        ${nps ? kpi('NPS', nps.score, `${nps.promoters}% prom. / ${nps.detractors}% detr.`,
+              tone(nps.score, 30, 0)) : ''}
+        ${umux ? kpi('UMUX-Lite (SUS)', umux.susEquivalent,
+              `benchmark 68 · łatwość ${umux.ease}/7`, tone(umux.susEquivalent, 68, 50)) : ''}
       </div>
       <p class="muted small">
-        Fit score = PMF 25% + częstotliwość użycia 25% + gotowość cenowa 20% + NPS 15% + wartość funkcji 15%.
+        Fit score = PMF 35% + częstotliwość użycia 30% + gotowość cenowa 25% + wybór płatnych funkcji 10%.
       </p>
     </section>
 
     <section class="card">
       <h2 class="subhead">Cena</h2>
-      <p class="lead">Ile realnie są skłonni płacić - dwie niezależne metody.</p>
-      ${vw && !vw.insufficient ? `
+      <p class="lead">Ile realnie są skłonni płacić.</p>
+      ${!has('vw_bargain') ? '' : vw && !vw.insufficient ? `
         <div class="kpis">
           ${kpi('Zakres akceptacji', vwVal(vw, 'pmc', vw.pmc) + '–' + vwVal(vw, 'pme', vw.pme),
                 `${PRODUCT.currency} / mies. (PMC–PME)`)}
@@ -270,11 +291,13 @@
             p.adjustedDemand + '%', p.revenueIndex]))}
       ` : ''}
 
-      <h3 style="margin-top:26px">Model rozliczeń i budżet</h3>
-      ${bars(M.distribution(rows, 'pricing_model').items)}
-      ${bars(M.distribution(rows, 'budget_source').items)}
-      <p class="muted small">Obecne wydatki na martech:</p>
-      ${bars(M.distribution(rows, 'monthly_martech_spend').items)}
+      <h3 style="margin-top:26px">Kto w ogóle może to kupić</h3>
+      ${bars(M.distribution(rows, 'decision_power').items)}
+      ${When('pricing_model', `<h3 style="margin-top:22px">Model rozliczeń</h3>
+        ${bars(M.distribution(rows, 'pricing_model').items)}`)}
+      ${When('budget_source', bars(M.distribution(rows, 'budget_source').items))}
+      ${When('monthly_martech_spend', `<p class="muted small">Obecne wydatki na martech:</p>
+        ${bars(M.distribution(rows, 'monthly_martech_spend').items)}`)}
     </section>
 
     <section class="card">
@@ -296,15 +319,16 @@
     </section>
 
     <section class="card">
-      <h2 class="subhead">Które funkcje mają wartość</h2>
+      <h2 class="subhead">Za które funkcje zapłacą</h2>
       <p class="lead">
-        Kolumna „zapłaciłbym" jest jedyną, która naprawdę się liczy - reszta to sympatia.
+        Nie „która się podoba", tylko za którą wyjmą pieniądze. Każdy wskazał maksymalnie 3.
       </p>
-      ${table(['Funkcja', 'Zapłaciłbym', 'Ważna/krytyczna', 'Bez wartości', 'Śr. ocena (0-4)'],
-        modStats.map((m) => [m.label, m.payShare + '%', m.criticalShare + '%',
-          m.deadShare + '%', fmt(m.meanScore)]))}
       ${bars(modStats.map((m) => ({ label: m.label, n: m.payShare, share: m.payShare })),
         { render: (i) => i.n + '%' })}
+      ${When('module_importance', table(
+        ['Funkcja', 'Zapłaciłbym', 'Ważna/krytyczna', 'Bez wartości', 'Śr. ocena (0-4)'],
+        modStats.map((m) => [m.label, m.payShare + '%', m.criticalShare + '%',
+          m.deadShare + '%', fmt(m.meanScore)])))}
 
       <h3 style="margin-top:26px">Czego brakuje</h3>
       ${quotes(M.openText(rows, 'missing_features'), 30)}
@@ -335,19 +359,20 @@
       ${bars(freq.items)}
       <h3 style="margin-top:22px">Co zablokuje wdrożenie</h3>
       ${bars(M.distribution(rows, 'blockers').items)}
-      <h3 style="margin-top:22px">Wymagane integracje</h3>
-      ${bars(M.distribution(rows, 'integrations_needed').items)}
-      <h3 style="margin-top:22px">Miejsce w procesie / co zastąpi</h3>
-      ${bars(M.distribution(rows, 'replaces').items)}
-      ${bars(M.distribution(rows, 'time_saved').items)}
-      <h3 style="margin-top:22px">Kiedy by to otworzyli</h3>
-      ${quotes(M.openText(rows, 'usage_moment'), 20)}
+      ${When('integrations_needed', `<h3 style="margin-top:22px">Wymagane integracje</h3>
+        ${bars(M.distribution(rows, 'integrations_needed').items)}`)}
+      ${When('replaces', `<h3 style="margin-top:22px">Miejsce w procesie / co zastąpi</h3>
+        ${bars(M.distribution(rows, 'replaces').items)}`)}
+      ${When('time_saved', bars(M.distribution(rows, 'time_saved').items))}
+      ${When('usage_moment', `<h3 style="margin-top:22px">Kiedy by to otworzyli</h3>
+        ${quotes(M.openText(rows, 'usage_moment'), 20)}`)}
     </section>
 
     <section class="card">
       <h2 class="subhead">Kto tego chce najbardziej</h2>
       <p class="lead">Segmenty posortowane po fit score. Tu widać, do kogo iść pierwszy.</p>
-      ${['role', 'segment', 'company_size', 'decision_power', 'monthly_adspend', 'analysis_capability'].map((qid) => {
+      ${['role', 'segment', 'analysis_capability', 'decision_power', 'company_size', 'monthly_adspend']
+        .filter(has).map((qid) => {
         const label = { role: 'Rola', segment: 'Typ organizacji', company_size: 'Wielkość firmy',
           decision_power: 'Wpływ na zakup', monthly_adspend: 'Budżet mediowy',
           analysis_capability: 'Możliwości analizy raportów' }[qid];
@@ -363,42 +388,45 @@
       <h2 class="subhead">Co zmienić - lista priorytetów</h2>
       <p class="lead">Zmiana nr 1 od każdego respondenta, od najlepiej dopasowanych osób w dół.</p>
       ${quotes(M.openText(rows, 'change_1'), 50)}
-      <h3 style="margin-top:26px">Zmiany nr 2 i 3</h3>
-      ${quotes(M.openText(rows, 'change_2').concat(M.openText(rows, 'change_3')), 40)}
+      ${When('change_2', `<h3 style="margin-top:26px">Zmiany nr 2 i 3</h3>
+        ${quotes(M.openText(rows, 'change_2').concat(M.openText(rows, 'change_3')), 40)}`)}
     </section>
 
     <section class="card">
       <h2 class="subhead">Pierwsze wrażenie i komunikacja</h2>
-      <div class="kpis">
-        ${kpi('Zrozumienie wartości', fmt(M.round(M.mean(M.nums(rows.map((r) => M.get(r, 'value_clarity')))), 1)) + ' / 5',
-          'jak szybko rozumieją, po co to jest')}
-        ${kpi('Zaufanie do danych', fmt(M.round(M.mean(M.nums(rows.map((r) => M.get(r, 'trust_data')))), 1)) + ' / 5',
-          'na ile wierzą liczbom w aplikacji')}
-      </div>
+      ${has('value_clarity') || has('trust_data') ? `<div class="kpis">
+        ${When('value_clarity', kpi('Zrozumienie wartości',
+          fmt(M.round(M.mean(M.nums(rows.map((r) => M.get(r, 'value_clarity')))), 1)) + ' / 5',
+          'jak szybko rozumieją, po co to jest'))}
+        ${When('trust_data', kpi('Zaufanie do danych',
+          fmt(M.round(M.mean(M.nums(rows.map((r) => M.get(r, 'trust_data')))), 1)) + ' / 5',
+          'na ile wierzą liczbom w aplikacji'))}
+      </div>` : ''}
       <h3 style="margin-top:22px">Jak sami opisują, czym to jest</h3>
       <p class="muted small">Jeśli te opisy się rozjeżdżają, problem jest w komunikacji, nie w produkcie.</p>
       ${quotes(M.openText(rows, 'what_is_it'), 30)}
-      <h3 style="margin-top:26px">Co się podobało</h3>
-      ${quotes(M.openText(rows, 'first_impression_pos'), 20)}
       <h3 style="margin-top:26px">Co irytowało</h3>
       ${quotes(M.openText(rows, 'first_impression_neg'), 30)}
-      <h3 style="margin-top:26px">Ból dnia codziennego (przed demem)</h3>
-      ${quotes(M.openText(rows, 'pain_today'), 20)}
-      <h3 style="margin-top:26px">Kto skorzysta najbardziej (ich zdaniem)</h3>
-      ${quotes(M.openText(rows, 'who_needs_it'), 20)}
-      <h3 style="margin-top:26px">Uzasadnienia NPS</h3>
-      ${quotes(M.openText(rows, 'nps_reason'), 30)}
-      ${M.openText(rows, 'anything_else').length ? `<h3 style="margin-top:26px">Inne uwagi</h3>
-        ${quotes(M.openText(rows, 'anything_else'), 20)}` : ''}
+      ${When('first_impression_pos', `<h3 style="margin-top:26px">Co się podobało</h3>
+        ${quotes(M.openText(rows, 'first_impression_pos'), 20)}`)}
+      ${When('pain_today', `<h3 style="margin-top:26px">Ból dnia codziennego (przed demem)</h3>
+        ${quotes(M.openText(rows, 'pain_today'), 20)}`)}
+      ${When('who_needs_it', `<h3 style="margin-top:26px">Kto skorzysta najbardziej (ich zdaniem)</h3>
+        ${quotes(M.openText(rows, 'who_needs_it'), 20)}`)}
+      ${When('nps_reason', `<h3 style="margin-top:26px">Uzasadnienia NPS</h3>
+        ${quotes(M.openText(rows, 'nps_reason'), 30)}`)}
+      ${When('anything_else', `<h3 style="margin-top:26px">Inne uwagi</h3>
+        ${quotes(M.openText(rows, 'anything_else'), 20)}`)}
     </section>
 
     <section class="card">
       <h2 class="subhead">Respondenci</h2>
-      ${table(['#', 'Kto', 'Fit', 'NPS', 'PMF', 'Częstotliwość', 'WTP (okazja)', 'Pilotaż', 'Czas', 'Flagi'],
+      ${table(['#', 'Kto', 'Fit', 'PMF', 'Częstotliwość', 'Maks. cena „tak"', 'Pilotaż', 'Czas', 'Flagi'],
         rows.map((r, i) => [
-          i + 1, M.who(r), fmt(r.__fit), fmt(M.get(r, 'nps')),
+          i + 1, M.who(r), fmt(r.__fit),
           M.get(r, 'pmf') || '–', M.get(r, 'usage_freq') || '–',
-          fmt(M.get(r, 'vw_bargain')), (M.get(r, 'pilot_interest') || '–').slice(0, 12),
+          fmt(topYesPrice(r), ' ' + PRODUCT.currency),
+          (M.get(r, 'pilot_interest') || '–').slice(0, 12),
           r.durationSeconds ? Math.round(r.durationSeconds / 60) + ' min' : '–',
           { html: r.__q.flags.length
             ? r.__q.flags.map((f) => `<span class="tag tag-bad">${esc(f)}</span>`).join('')
@@ -446,7 +474,6 @@
     const roles = ['Marketing manager / head of marketing', 'Performance / paid media specialist',
       'Agencja - obsługa klientów', 'Marketing analyst / data', 'Właściciel firmy / CMO / zarząd'];
     const segs = ['B2B SaaS / tech', 'E-commerce', 'Agencja marketingowa', 'Usługi B2B'];
-    const sizes = ['2-10', '11-50', '51-200', '201-1000'];
     const freqs = Object.keys(M.FREQ_SCORE);
     const pmfs = ['Bardzo rozczarowany', 'Trochę rozczarowany', 'Obojętnie - poradzę sobie bez niego',
       'Nie dotyczy, i tak nie zamierzam go używać'];
@@ -454,67 +481,41 @@
     return Array.from({ length: 14 }, (_, i) => {
       const strong = i % 3 !== 2;
       const base = strong ? 260 : 90;
+      /* Dane odpowiadają krótkiej wersji ankiety - dokładnie te pola,
+         które realnie wróci z formularza. */
       const answers = {
-        role: pick(roles, i), segment: pick(segs, i), company_size: pick(sizes, i),
-        decision_power: i % 2 ? 'Tak, decyduję samodzielnie' : 'Współdecyduję z zespołem',
+        role: pick(roles, i), segment: pick(segs, i),
         reports_count: strong ? 8 + (i % 5) * 4 : 3 + (i % 3),
         analysis_capability: strong
           ? 'Analizuję tylko część raportów ze względu na ograniczony czas.'
           : 'Regularnie i szczegółowo analizuję wszystkie ważne raporty.',
-        channels: ['Google Ads', 'Meta Ads'], monthly_adspend: '20-100 tys. PLN',
-        tools_current: ['Excel / Google Sheets', 'GA4'], monthly_martech_spend: '1-5 tys. PLN',
-        pain_today: 'Składanie danych z paneli do arkusza zajmuje mi kilka godzin w każdy poniedziałek.',
         what_is_it: strong ? 'Narzędzie, które zbiera dane z kampanii i mówi, co poprawić.'
           : 'Szczerze? Nie do końca rozumiem, wygląda jak kolejny dashboard.',
-        value_clarity: strong ? 4 : 2,
-        first_impression_pos: 'Czysty interfejs, szybko widzę najważniejsze liczby.',
+        t1_outcome: strong ? 'Wykonałem bez problemu' : 'Nie udało mi się - nie znalazłem tego',
+        t1_seq: strong ? 6 : 3,
+        t1_friction: strong ? '' : 'Filtry są schowane pod ikoną, której nie zauważyłem.',
         first_impression_neg: strong ? 'Za mało kontekstu przy rekomendacjach - nie wiem, skąd wynikają.'
           : 'Nie wiem, czym to się różni od Looker Studio, które już mam.',
-        trust_data: strong ? 4 : 2,
-        t1_outcome: strong ? 'Wykonałem bez problemu' : 'Nie udało mi się - nie znalazłem tego',
-        t1_seq: strong ? 6 : 3, t1_friction: strong ? '' : 'Filtry są schowane pod ikoną, której nie zauważyłem.',
-        t2_outcome: strong ? 'Wykonałem, ale zajęło mi to za długo' : 'Wykonałem częściowo / nie jestem pewien wyniku',
-        t2_seq: strong ? 5 : 3, t2_friction: 'Rekomendacja bez uzasadnienia, nie wdrożyłbym jej na ślepo.',
-        t3_outcome: strong ? 'Wykonałem bez problemu' : 'Nie udało mi się - funkcja nie działała',
-        t3_seq: strong ? 6 : 2, t3_friction: strong ? '' : 'Eksport nic nie zrobił po kliknięciu.',
-        module_importance: PRODUCT.modules.reduce((acc, m, j) => {
-          acc[m.id] = strong ? [4, 3, 3, 2, 4, 1, 3][j % 7] : [2, 1, 2, 1, 2, 0, 3][j % 7];
-          return acc;
-        }, {}),
         must_have_top3: PRODUCT.modules.slice(i % 3, (i % 3) + 2).map((m) => m.label),
         missing_features: 'Integracja z Google Ads i możliwość eksportu do prezentacji dla klienta.',
-        umux_capability: strong ? 5 : 3, umux_ease: strong ? 6 : 4,
         usage_freq: strong ? pick(freqs, i) : 'Raz w miesiącu lub rzadziej',
-        usage_moment: 'Poniedziałkowy przegląd kampanii i przed spotkaniem statusowym z klientem.',
-        replaces: strong ? 'Zastąpiłoby moją ręczną pracę w Excelu' : 'Byłoby dodatkiem, nic nie zastąpi',
         blockers: strong ? ['Brak integracji z moimi źródłami danych']
           : ['Cena', 'Mamy już podobne narzędzie', 'Zbyt ogólne wnioski, nic nowego dla mnie'],
-        integrations_needed: ['Google Ads', 'Meta Ads', 'GA4'],
-        time_saved: strong ? '6-10 h' : '1-2 h',
-        vw_too_cheap: base * 0.2, vw_bargain: base, vw_expensive: base * 2, vw_too_expensive: base * 3.5,
         gg_intent: PRODUCT.priceTiers.reduce((acc, p) => {
           acc[`p${p}`] = p <= base ? 2 : (p <= base * 2 ? 1 : 0);
           return acc;
         }, {}),
-        pricing_model: i % 2 ? 'Stała opłata za firmę (flat)' : 'Za użytkownika (per seat)',
-        budget_source: 'Budżet narzędzi marketingowych',
+        decision_power: i % 2 ? 'Tak, decyduję samodzielnie' : 'Współdecyduję z zespołem',
         pmf: strong ? pmfs[i % 2] : pmfs[2 + (i % 2)],
-        nps: strong ? 8 + (i % 3) : 3 + (i % 3),
-        nps_reason: strong ? 'Oszczędza czas na raportowaniu, ale musi mieć integracje.'
-          : 'Na razie nie widzę przewagi nad tym, czego już używam.',
         change_1: strong ? 'Pokazujcie źródło i uzasadnienie każdej rekomendacji.'
           : 'Wyjaśnijcie na wejściu, czym to się różni od Looker Studio.',
-        change_2: 'Eksport do PDF z logo klienta.',
-        change_3: i % 2 ? 'Alerty, kiedy kampania spada poniżej progu.' : '',
-        who_needs_it: 'Agencje obsługujące kilkunastu klientów i e-commerce bez własnego analityka.',
         pilot_interest: strong ? 'Tak, chętnie - odezwijcie się' : 'Nie, dziękuję',
         email: strong ? `marketer${i}@example.com` : '',
-        anything_else: '',
       };
       return {
         schema: 'markiq-eval/1', product: PRODUCT.name,
         submittedAt: new Date(Date.now() - i * 36e5).toISOString(),
-        durationSeconds: strong ? 620 + i * 20 : 200 + i * 5,
+        durationSeconds: strong ? 300 + i * 15 : 110 + i * 4,
         source: i % 4 === 0 ? 'linkedin' : 'mail', answers,
       };
     });
