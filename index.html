@@ -76,18 +76,32 @@
 
   <!-- ============================ KONIEC ============================ -->
   <section class="card" id="screenDone" hidden>
-    <h1>Dziękujemy. Serio.</h1>
+    <h1 id="doneTitle">Zapisujemy…</h1>
     <p class="lead" id="doneMsg"></p>
-    <div id="doneFallback" hidden>
+
+    <!-- widoczne tylko, gdy zapis się nie powiódł -->
+    <div id="doneRetry" hidden>
       <div class="panel panel-warn">
-        <strong>Ostatni krok:</strong> pobierz plik z odpowiedziami i odeślij go mailem.
+        Nie udało się połączyć z serwerem. Twoje odpowiedzi nie zginęły -
+        spróbuj ponownie albo pobierz je jako plik i odeślij mailem.
       </div>
       <div class="nav-row">
-        <button class="btn btn-primary" id="btnDownload" type="button">Pobierz odpowiedzi (JSON)</button>
-        <a class="btn" id="btnMail">Napisz maila</a>
+        <button class="btn btn-primary" id="btnRetry" type="button">Spróbuj ponownie</button>
+        <button class="btn" id="btnDownload" type="button">Pobierz jako plik</button>
       </div>
     </div>
-    <details class="raw">
+
+    <!-- widoczne tylko właścicielowi ankiety: brak skonfigurowanego zapisu -->
+    <div id="donePreview" hidden>
+      <div class="panel panel-warn">
+        <strong>Tryb podglądu.</strong> Ta kopia ankiety nie ma podłączonego zapisu,
+        więc odpowiedzi <strong>nie zostały nigdzie wysłane</strong>. Zanim wyślesz link
+        marketerom, ustaw <code>SUBMIT.endpoint</code> w <code>assets/config.js</code> -
+        instrukcja jest w <code>README.md</code>.
+      </div>
+    </div>
+
+    <details class="raw" id="rawWrap" hidden>
       <summary>Podejrzyj swoje odpowiedzi</summary>
       <pre id="rawJson"></pre>
     </details>

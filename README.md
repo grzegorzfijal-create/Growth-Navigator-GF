@@ -104,32 +104,52 @@ i z dowolnego hostingu. Ankieta jest widokiem domyślnym, dashboard siedzi pod
 kopii kodu, która mogłaby się rozjechać. Po każdej zmianie w `assets/` lub
 w `index.html` / `results.html` uruchom `npm run build` ponownie.
 
-Jedno ograniczenie: jeśli opublikujesz ten plik jako Artifact na claude.ai,
-zapis do Arkusza Google nie zadziała (polityka bezpieczeństwa strony blokuje
-żądania na zewnętrzne adresy). Ankieta sama przełączy się wtedy na pobranie
-pliku JSON. Do realnego zbierania odpowiedzi wdróż na Vercela.
+**Ważne ograniczenie Artifactu na claude.ai.** Opublikowana tam strona ma zablokowane
+wszystkie żądania na zewnętrzne adresy, więc zapis odpowiedzi **nie zadziała** -
+niezależnie od tego, czy użyjesz Arkusza Google, Formspree czy własnego API.
+Nie da się tego obejść: udostępniona stronie lista uprawnień obejmuje tylko
+pobieranie pliku i konektory claude.ai zalogowanego widza, a żadne z tych dwóch
+nie nadaje się do zbierania odpowiedzi od obcych ludzi.
 
-## 4. Zbieranie odpowiedzi - wybierz jedną drogę
+Artifact traktuj więc jako **podgląd ankiety do pokazania komuś**. Do realnego
+zbierania odpowiedzi wdróż na Vercela (albo dowolny inny hosting statyczny).
 
-**A. Bez konfiguracji (domyślnie).** `SUBMIT.endpoint = ''`. Respondent na koniec pobiera
-plik JSON i odsyła mailem. Działa od razu, ale tracisz część osób na ostatnim kroku.
-Dobre dla 5-10 osób, które znasz osobiście.
+## 4. Zbieranie odpowiedzi - to musisz zrobić, zanim wyślesz link
 
-**B. Arkusz Google (polecane).** Zajmuje 5 minut, instrukcja krok po kroku jest
-w `backend/apps-script.gs`. Wklejasz URL wdrożenia do `SUBMIT.endpoint` i odpowiedzi
-lecą prosto do arkusza. Zakładka `raw` trzyma pełny JSON - to jest źródło dla dashboardu.
-Jeśli zapis się nie uda (brak sieci, zły URL), ankieta **sama** przełącza się na tryb A,
-więc odpowiedzi nie giną.
+Ankieta jest stroną statyczną, więc **sama z siebie nie wyśle nic na Twojego maila** -
+potrzebuje adresu, pod który wysyła odpowiedzi. Dopóki `SUBMIT.endpoint` jest pusty,
+ankieta działa w trybie podglądu: przechodzi się ją normalnie, ale na końcu mówi
+wprost, że odpowiedzi nigdzie nie poleciały. To jest stan do testowania, nie do wysyłki.
 
-**C. Cokolwiek innego** przyjmujące `POST` z JSON-em w body (Formspree, n8n, własne API).
-Wpisz URL w `SUBMIT.endpoint`.
+**Arkusz Google + mail (polecane, 5 minut, za darmo).**
+Pełna instrukcja krok po kroku jest na górze `backend/apps-script.gs`. W skrócie:
 
-Ankieta autosave'uje się w `localStorage`, więc marketer może przerwać i wrócić.
+1. Nowy Arkusz Google -> Rozszerzenia -> Apps Script -> wklej `backend/apps-script.gs`.
+2. Ustaw `NOTIFY_EMAIL` na swój adres.
+3. Wdróż jako aplikację internetową: **Wykonaj jako: Ja**, **Kto ma dostęp: Wszyscy**.
+   To drugie jest obowiązkowe - przy innym ustawieniu przeglądarka respondenta dostanie
+   odmowę i zobaczy ekran „Nie udało się zapisać".
+4. Skopiuj URL wdrożenia do `SUBMIT.endpoint` w `assets/config.js`.
+
+Od tego momentu każda odpowiedź: ląduje w arkuszu, przychodzi do Ciebie mailem
+z podsumowaniem (rola, PMF, wynik zadania, ceny, odpowiedzi otwarte) i ma dopięty
+plik `.json` gotowy do wrzucenia w dashboard. Jeśli respondent zostawił swój adres,
+mail ma ustawione `reply-to` na niego - odpisujesz jednym kliknięciem.
+
+**Alternatywy** przyjmujące `POST` z JSON-em w body: Formspree, FormSubmit, n8n, własne API.
+Wpisujesz URL w to samo pole.
+
+### Co widzi respondent
+
+Ostatni przycisk ankiety to **„Zapisz moje odpowiedzi"** i to jedyne, co musi kliknąć.
+Wysyłka ma 15-sekundowy limit czasu. Jeśli się nie uda, dostaje ekran z przyciskiem
+„Spróbuj ponownie" (odpowiedzi cały czas siedzą w `localStorage`, więc nic nie ginie),
+a jako ostateczność - pobranie pliku. Nikt nie jest proszony o wysyłanie maila ręcznie.
 
 ### Skąd wziąć dane do dashboardu
 
-- Tryb A: przeciągnij pliki `.json` z maili na `results.html`.
-- Tryb B: skopiuj kolumnę `json` z zakładki `raw` w arkuszu i wklej w pole „Wklej JSON"
+- Z maili: przeciągnij załączone pliki `.json` na `results.html`.
+- Z arkusza: skopiuj kolumnę `json` z zakładki `raw` i wklej w pole „Wklej JSON"
   (przyjmuje też JSON-per-linia).
 
 Wszystko liczy się w przeglądarce, dane nigdzie nie wychodzą.

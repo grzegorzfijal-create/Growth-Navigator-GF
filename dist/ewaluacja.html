@@ -356,18 +356,32 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 
   <!-- ============================ KONIEC ============================ -->
   <section class="card" id="screenDone" hidden>
-    <h1>Dziękujemy. Serio.</h1>
+    <h1 id="doneTitle">Zapisujemy…</h1>
     <p class="lead" id="doneMsg"></p>
-    <div id="doneFallback" hidden>
+
+    <!-- widoczne tylko, gdy zapis się nie powiódł -->
+    <div id="doneRetry" hidden>
       <div class="panel panel-warn">
-        <strong>Ostatni krok:</strong> pobierz plik z odpowiedziami i odeślij go mailem.
+        Nie udało się połączyć z serwerem. Twoje odpowiedzi nie zginęły -
+        spróbuj ponownie albo pobierz je jako plik i odeślij mailem.
       </div>
       <div class="nav-row">
-        <button class="btn btn-primary" id="btnDownload" type="button">Pobierz odpowiedzi (JSON)</button>
-        <a class="btn" id="btnMail">Napisz maila</a>
+        <button class="btn btn-primary" id="btnRetry" type="button">Spróbuj ponownie</button>
+        <button class="btn" id="btnDownload" type="button">Pobierz jako plik</button>
       </div>
     </div>
-    <details class="raw">
+
+    <!-- widoczne tylko właścicielowi ankiety: brak skonfigurowanego zapisu -->
+    <div id="donePreview" hidden>
+      <div class="panel panel-warn">
+        <strong>Tryb podglądu.</strong> Ta kopia ankiety nie ma podłączonego zapisu,
+        więc odpowiedzi <strong>nie zostały nigdzie wysłane</strong>. Zanim wyślesz link
+        marketerom, ustaw <code>SUBMIT.endpoint</code> w <code>assets/config.js</code> -
+        instrukcja jest w <code>README.md</code>.
+      </div>
+    </div>
+
+    <details class="raw" id="rawWrap" hidden>
       <summary>Podejrzyj swoje odpowiedzi</summary>
       <pre id="rawJson"></pre>
     </details>
@@ -1471,7 +1485,8 @@ const M = (function () {
     sec.questions.forEach((q) => form.appendChild(renderQuestion(q)));
 
     $('btnBack').disabled = state.sectionIdx === 0;
-    $('btnNext').textContent = state.sectionIdx === sections.length - 1 ? 'Wyślij odpowiedzi' : 'Dalej';
+    $('btnNext').textContent = state.sectionIdx === sections.length - 1
+      ? 'Zapisz moje odpowiedzi' : 'Dalej';
     $('progressBar').style.width = `${Math.round((state.sectionIdx / sections.length) * 100)}%`;
     $('errSummary').hidden = true;
     state._sectionEnteredAt = Date.now();
@@ -1511,46 +1526,94 @@ const M = (function () {
     };
   }
 
-  function fallbackDelivery(payload) {
-    $('doneFallback').hidden = false;
-    $('doneMsg').textContent =
-      'Twoje odpowiedzi są gotowe. Zostaje jeszcze jeden krok - odeślij nam plik.';
-
+  function downloadPayload(payload) {
     const json = JSON.stringify(payload, null, 2);
-    $('btnDownload').addEventListener('click', () => {
-      const blob = new Blob([json], { type: 'application/json' });
-      const a = el('a', { href: URL.createObjectURL(blob), download: `ewaluacja-${PRODUCT.name.toLowerCase()}-${Date.now()}.json` });
-      document.body.appendChild(a); a.click(); a.remove();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = el('a', {
+      href: url,
+      download: `ewaluacja-${PRODUCT.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.json`,
     });
-    $('btnMail').href = 'mailto:' + SUBMIT.contactEmail +
-      '?subject=' + encodeURIComponent(`Ewaluacja ${PRODUCT.name} - odpowiedzi`) +
-      '&body=' + encodeURIComponent('W załączniku plik z odpowiedziami (pobrany z ankiety).\n\n');
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  async function submit() {
-    const payload = buildPayload();
-    $('rawJson').textContent = JSON.stringify(payload, null, 2);
-    show('screenDone');
-    $('btnNext').disabled = true;
-
-    if (!SUBMIT.endpoint) { fallbackDelivery(payload); return; }
-
-    $('doneMsg').textContent = 'Zapisujemy odpowiedzi...';
+  /* Wysyłka z twardym limitem czasu - bez tego przy padniętej sieci
+     respondent gapi się w "Zapisujemy..." w nieskończoność. */
+  async function postPayload(payload) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
     try {
       // text/plain omija preflight CORS - wymagane przez Google Apps Script
       const res = await fetch(SUBMIT.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload),
+        signal: ctrl.signal,
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      $('doneMsg').textContent =
-        'Odpowiedzi zapisane. Twój feedback trafi wprost do listy zmian w produkcie - ' +
-        'a jeśli zostawiłeś e-mail, wrócimy do Ciebie z tym, co z niego zrobiliśmy.';
-      try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
-    } catch (e) {
-      fallbackDelivery(payload);
+    } finally {
+      clearTimeout(timer);
     }
+  }
+
+  function showDoneState(state, payload) {
+    const title = $('doneTitle');
+    const msg = $('doneMsg');
+    $('doneRetry').hidden = state !== 'error';
+    $('donePreview').hidden = state !== 'preview';
+    $('rawWrap').hidden = state === 'sending' || state === 'saved';
+
+    if (state === 'sending') {
+      title.textContent = 'Zapisujemy…';
+      msg.textContent = 'Sekunda, wysyłamy Twoje odpowiedzi.';
+    } else if (state === 'saved') {
+      title.textContent = 'Dziękujemy. Serio.';
+      msg.textContent = 'Odpowiedzi zapisane - nic więcej nie musisz robić. '
+        + 'Twój feedback trafi wprost do listy zmian w produkcie, a jeśli zostawiłeś '
+        + 'e-mail, wrócimy do Ciebie z tym, co z niego zrobiliśmy.';
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* tryb prywatny */ }
+    } else if (state === 'error') {
+      title.textContent = 'Nie udało się zapisać';
+      msg.textContent = 'Twoje odpowiedzi są bezpieczne w tej przeglądarce.';
+    } else {
+      title.textContent = 'Koniec ankiety';
+      msg.textContent = 'Dziękujemy za wypełnienie.';
+    }
+    if (payload) $('rawJson').textContent = JSON.stringify(payload, null, 2);
+  }
+
+  async function submit() {
+    const payload = buildPayload();
+    show('screenDone');
+    $('btnNext').disabled = true;
+
+    if (!SUBMIT.endpoint) { showDoneState('preview', payload); return; }
+
+    showDoneState('sending', payload);
+    try {
+      await postPayload(payload);
+      showDoneState('saved', payload);
+    } catch (e) {
+      showDoneState('error', payload);
+    }
+  }
+
+  function wireDoneButtons() {
+    $('btnDownload').addEventListener('click', () => downloadPayload(buildPayload()));
+    $('btnRetry').addEventListener('click', async () => {
+      const btn = $('btnRetry');
+      btn.disabled = true;
+      btn.textContent = 'Wysyłamy…';
+      const payload = buildPayload();
+      try {
+        await postPayload(payload);
+        showDoneState('saved', payload);
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Spróbuj ponownie';
+      }
+    });
   }
 
   /* --------------------------------------------------------------------- init */
@@ -1586,6 +1649,7 @@ const M = (function () {
     });
     $('btnNext').addEventListener('click', goNext);
     $('btnBack').addEventListener('click', goBack);
+    wireDoneButtons();
     window.addEventListener('beforeunload', () => { stampSectionTime(); save(); });
   }
 
