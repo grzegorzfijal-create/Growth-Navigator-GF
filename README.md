@@ -82,14 +82,14 @@ npm test        # albo: node test/metrics.test.mjs
 Ankieta to zwykłe pliki statyczne, bez builda. Repo jest publiczne, więc
 najprościej wystawić ją przez **GitHub Pages, za darmo i na stałe**:
 
-1. Wejdź na `https://github.com/grzegorzfijal-create/trend-alert/settings/pages`
+1. Wejdź na `https://github.com/grzegorzfijal-create/TrendAlertAG-/settings/pages`
 2. **Source**: „Deploy from a branch"
 3. **Branch**: `claude/marketer-app-evaluation-0fyjrm`, folder `/ (root)` -> **Save**
 4. Po 1-2 minutach ankieta jest pod adresem:
-   `https://grzegorzfijal-create.github.io/trend-alert/`
+   `https://grzegorzfijal-create.github.io/TrendAlertAG-/`
 
 Ten link wysyłasz marketerom. Dashboard z wynikami siedzi pod
-`https://grzegorzfijal-create.github.io/trend-alert/results.html`
+`https://grzegorzfijal-create.github.io/TrendAlertAG-/results.html`
 (ma `noindex`, ale jest publicznie dostępny - sam w sobie nie zawiera żadnych
 danych, liczy dopiero to, co mu wgrasz).
 
@@ -99,7 +99,7 @@ na vercel.com / netlify.com. Konfiguracja jest ta sama.
 ### Tagowanie źródła
 
 Dopisz `?r=nazwa` do linku, żeby wiedzieć, który kanał daje lepszych respondentów:
-`...github.io/trend-alert/?r=linkedin`. Wartość trafia do odpowiedzi
+`...github.io/TrendAlertAG-/?r=linkedin`. Wartość trafia do odpowiedzi
 i do maila jako „Źródło linku".
 
 ### Wersja jednoplikowa
