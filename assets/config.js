@@ -18,13 +18,12 @@ const PRODUCT = {
   // Opis, który zobaczy marketer PRZED wejściem do dema.
   // Trzymaj neutralnie - nie sprzedawaj, bo zaburzysz odpowiedzi o wartości.
   pitch:
-    'Chcielibyśmy, aby Trend Alert pomagał marketerom uporządkować i analizować ' +
-    'rosnącą liczbę danych oraz raportów. Gdy organizacja nie dysponuje dedykowanym ' +
-    'zespołem analitycznym, zestawianie danych sprzedażowych, wyników kampanii ' +
-    'i raportów z wielu paneli, zapisanych w różnych formatach i opisanych odmienną ' +
-    'nomenklaturą, staje się dużym wyzwaniem. Narzędzie ma integrować te informacje ' +
-    'w jednym miejscu, ujednolicać je i umożliwiać podejmowanie decyzji na podstawie ' +
-    'pełnego obrazu dostępnych danych.',
+    'Trend Alert ma pomagać w szybszym i trafniejszym podejmowaniu decyzji. ' +
+    'Narzędzie integruje dane z wielu raportów i źródeł, ujednolica je oraz analizuje ' +
+    'jako jeden spójny obraz zamiast wielu oddzielnych zestawień. Najistotniejsze ' +
+    'informacje przedstawia w formie szans i alarmów, komunikując je w formie ' +
+    'czytelnych alertów. Dzięki temu oszczędzamy czas na przeszukiwaniu danych, ' +
+    'analizie i wyciąganiu wniosków.',
 
   // MODUŁY / FUNKCJE - respondent wybiera maksymalnie 3, za które zapłaciłby.
   // ZMIEŃ NA PRAWDZIWE NAZWY Z APLIKACJI (te są przykładowe).
