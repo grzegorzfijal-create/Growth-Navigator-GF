@@ -25,7 +25,7 @@
       qs.push({ type: 'info', id: `${t.id}_info`, title: t.title, body: t.instruction });
       qs.push({
         id: `${t.id}_outcome`, type: 'single', required: true,
-        label: 'Jak poszło?',
+        emailLabel: 'Wynik zadania', label: 'Jak poszło?',
         options: [
           'Wykonałem bez problemu',
           'Wykonałem, ale zajęło mi to za długo',
@@ -36,12 +36,13 @@
       });
       qs.push({
         id: `${t.id}_seq`, type: 'scale', required: true,
-        label: 'Jak łatwe było to zadanie?',
+        emailLabel: 'Łatwość zadania (1-7)', label: 'Jak łatwe było to zadanie?',
         min: 1, max: 7,
         labels: ['Bardzo trudne', '', '', 'Średnio', '', '', 'Bardzo łatwe'],
       });
       qs.push({
         id: `${t.id}_friction`, type: 'text',
+        emailLabel: 'Gdzie się zaciął',
         label: 'Gdzie się zaciąłeś? (jeśli nigdzie - zostaw puste)',
         placeholder: 'np. "nie wiedziałem, że trzeba kliknąć w wiersz tabeli"',
       });
@@ -468,17 +469,56 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  /* Odpowiedź w formie czytelnej w mailu: płaski obiekt "pytanie -> odpowiedź"
+     w kolejności z ankiety. Na końcu pełny JSON, żeby dało się go wkleić
+     do dashboardu i policzyć wskaźniki. */
+  function flattenForEmail(payload) {
+    const out = {
+      _subject: `Ankieta ${PRODUCT.name}: nowa odpowiedź`,
+      _template: 'table',
+      _captcha: 'false',
+    };
+    const fmt = (q, v) => {
+      if (v == null || v === '') return '';
+      if (Array.isArray(v)) return v.join(', ');
+      if (q.type === 'matrix') {
+        return q.rows
+          .map((row) => `${row.label}: ${q.cols[v[row.id]] || '-'}`)
+          .join('; ');
+      }
+      return String(v);
+    };
+
+    sections.forEach((sec) => {
+      sec.questions.filter(isInput).forEach((q) => {
+        const key = q.emailLabel || q.label;
+        const val = fmt(q, state.answers[q.id]);
+        const other = state.answers[q.id + '_other'];
+        if (val || other) out[key] = [val, other && `Inne: ${other}`].filter(Boolean).join(' | ');
+      });
+    });
+
+    out['Czas wypełniania'] = payload.durationSeconds
+      ? Math.round(payload.durationSeconds / 60) + ' min' : '';
+    out['Źródło linku'] = payload.source || '';
+    out['PEŁNE DANE (wklej do dashboardu)'] = JSON.stringify(payload);
+    return out;
+  }
+
   /* Wysyłka z twardym limitem czasu - bez tego przy padniętej sieci
      respondent gapi się w "Zapisujemy..." w nieskończoność. */
   async function postPayload(payload) {
+    const asEmail = SUBMIT.format === 'formsubmit';
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
     try {
-      // text/plain omija preflight CORS - wymagane przez Google Apps Script
       const res = await fetch(SUBMIT.endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload),
+        headers: asEmail
+          ? { 'Content-Type': 'application/json' }
+          // text/plain omija preflight CORS - wymagane przez Google Apps Script
+          : { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(asEmail ? flattenForEmail(payload) : payload),
         signal: ctrl.signal,
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);

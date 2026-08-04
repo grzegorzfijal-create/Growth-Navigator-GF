@@ -61,12 +61,22 @@ const PRODUCT = {
 
 /* -----------------------------------------------------------------------------
    ZBIERANIE ODPOWIEDZI
-   Zostaw endpoint pusty ('') = respondent pobiera plik JSON i odsyła mailem.
-   Wpisz URL (Google Apps Script / Formspree / własne API) = zapis automatyczny.
-   Instrukcja: patrz README.md + backend/apps-script.gs
+   Pusty endpoint = tryb podglądu: ankietę da się przejść, ale odpowiedzi
+   nigdzie nie lecą i ekran końcowy mówi to wprost.
+   Instrukcja krok po kroku: patrz README.md, sekcja 4.
 -------------------------------------------------------------------------------- */
 const SUBMIT = {
-  endpoint: '',
+  /* Gdzie lecą odpowiedzi.
+     Domyślnie FormSubmit: odpowiedzi przychodzą mailem, zero konfiguracji
+     po stronie serwera. WYMAGA JEDNORAZOWEJ AKTYWACJI - wyślij pierwszą
+     testową odpowiedź, a na podany adres przyjdzie mail z linkiem
+     aktywacyjnym. Dopóki go nie klikniesz, nic nie dotrze. */
+  endpoint: 'https://formsubmit.co/ajax/grzegorz.fijal@gmail.com',
+
+  /* 'formsubmit' - płaski, czytelny mail z pytaniami i odpowiedziami
+     'json'       - surowy JSON w body (Google Apps Script, n8n, własne API) */
+  format: 'formsubmit',
+
   contactEmail: 'grzegorz.fijal@gmail.com',
   estimatedMinutes: 5,
 };
@@ -107,12 +117,14 @@ const SECTIONS = [
       },
       {
         id: 'reports_count', type: 'number', required: true, unit: 'raportów / źródeł',
+        emailLabel: 'Liczba raportów / źródeł',
         label: 'Jaka jest szacunkowa ilość stałych raportów/źródeł danych/paneli, '
           + 'w których znajdują się informacje ważne dla marek/produktów, którymi zarządzasz?',
         hint: 'Podaj przybliżoną liczbę.',
       },
       {
         id: 'analysis_capability', type: 'single', required: true,
+        emailLabel: 'Możliwości analizy raportów',
         label: 'Jak oceniasz swoje możliwości w zakresie analizy raportów?',
         options: [
           'Regularnie i szczegółowo analizuję wszystkie ważne raporty.',
@@ -134,6 +146,7 @@ const SECTIONS = [
     questions: [
       {
         id: 'what_is_it', type: 'textarea', required: true,
+        emailLabel: 'Czym to jest wg respondenta',
         label: 'Własnymi słowami: co robi ta aplikacja i dla kogo jest?',
         hint: 'Nie sprawdzamy Cię - sprawdzamy, czy produkt sam się tłumaczy. '
           + 'Napisz szczerze, także jeśli nie wiesz.',
@@ -143,6 +156,7 @@ const SECTIONS = [
       { type: 'tasks' },
       {
         id: 'first_impression_neg', type: 'textarea', required: true,
+        emailLabel: 'Co zirytowało',
         label: 'Co Cię najbardziej zirytowało, zmyliło lub rozczarowało?',
         hint: 'Ta odpowiedź jest dla nas najcenniejsza. Nie oszczędzaj nas.',
         minLength: 10,
@@ -157,16 +171,19 @@ const SECTIONS = [
     questions: [
       {
         id: 'must_have_top3', type: 'multi', required: true, max: 3,
+        emailLabel: 'Zapłaciłby za funkcje',
         label: 'Wybierz maksymalnie 3 funkcje, za które realnie zapłaciłbyś pieniędzmi',
         options: 'MODULE_LABELS',
       },
       {
         id: 'missing_features', type: 'textarea', required: true,
+        emailLabel: 'Czego brakuje',
         label: 'Czego brakuje, żeby to narzędzie było dla Ciebie naprawdę użyteczne?',
         minLength: 15,
       },
       {
         id: 'usage_freq', type: 'single', required: true,
+        emailLabel: 'Jak często by używał',
         label: 'Gdyby aplikacja była gotowa i podłączona do Twoich danych, '
           + 'jak często byś jej używał?',
         options: [
@@ -180,6 +197,7 @@ const SECTIONS = [
       },
       {
         id: 'blockers', type: 'multi', required: true,
+        emailLabel: 'Blokery wdrożenia',
         label: 'Co realnie zablokowałoby wdrożenie u Ciebie?',
         options: [
           'Brak integracji z moimi źródłami danych',
@@ -205,6 +223,7 @@ const SECTIONS = [
     questions: [
       {
         id: 'gg_intent', type: 'matrix', required: true,
+        emailLabel: 'Gotowość cenowa',
         label: 'Czy kupiłbyś abonament przy tej cenie miesięcznej? '
           + '(netto, za jednego użytkownika)',
         rows: 'PRICE_TIERS',
@@ -212,6 +231,7 @@ const SECTIONS = [
       },
       {
         id: 'decision_power', type: 'single', required: true,
+        emailLabel: 'Decyzyjność zakupowa',
         label: 'Czy decydujesz o zakupie narzędzi marketingowych, aplikacji czy subskrypcji?',
         options: [
           'Tak, decyduję samodzielnie',
@@ -222,6 +242,7 @@ const SECTIONS = [
       },
       {
         id: 'pmf', type: 'single', required: true,
+        emailLabel: 'PMF (gdyby stracił dostęp)',
         label: 'Jak byś się poczuł, gdybyś od dziś nie mógł już korzystać z tego narzędzia?',
         options: [
           'Bardzo rozczarowany',
@@ -232,11 +253,13 @@ const SECTIONS = [
       },
       {
         id: 'change_1', type: 'text', required: true,
+        emailLabel: 'Najważniejsza zmiana',
         label: 'Jedna najważniejsza rzecz, którą powinniśmy zmienić',
         minLength: 5,
       },
       {
         id: 'pilot_interest', type: 'single', required: true,
+        emailLabel: 'Pilotaż',
         label: 'Chciałbyś wziąć udział w pilotażu na swoich danych?',
         options: [
           'Tak, chętnie - odezwijcie się',
@@ -246,6 +269,7 @@ const SECTIONS = [
       },
       {
         id: 'email', type: 'email',
+        emailLabel: 'E-mail respondenta',
         label: 'E-mail (tylko jeśli chcesz, żebyśmy wrócili do Ciebie)',
         placeholder: 'imie@firma.pl',
       },

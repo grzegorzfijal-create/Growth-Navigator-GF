@@ -492,12 +492,22 @@ const PRODUCT = {
 
 /* -----------------------------------------------------------------------------
    ZBIERANIE ODPOWIEDZI
-   Zostaw endpoint pusty ('') = respondent pobiera plik JSON i odsyła mailem.
-   Wpisz URL (Google Apps Script / Formspree / własne API) = zapis automatyczny.
-   Instrukcja: patrz README.md + backend/apps-script.gs
+   Pusty endpoint = tryb podglądu: ankietę da się przejść, ale odpowiedzi
+   nigdzie nie lecą i ekran końcowy mówi to wprost.
+   Instrukcja krok po kroku: patrz README.md, sekcja 4.
 -------------------------------------------------------------------------------- */
 const SUBMIT = {
-  endpoint: '',
+  /* Gdzie lecą odpowiedzi.
+     Domyślnie FormSubmit: odpowiedzi przychodzą mailem, zero konfiguracji
+     po stronie serwera. WYMAGA JEDNORAZOWEJ AKTYWACJI - wyślij pierwszą
+     testową odpowiedź, a na podany adres przyjdzie mail z linkiem
+     aktywacyjnym. Dopóki go nie klikniesz, nic nie dotrze. */
+  endpoint: 'https://formsubmit.co/ajax/grzegorz.fijal@gmail.com',
+
+  /* 'formsubmit' - płaski, czytelny mail z pytaniami i odpowiedziami
+     'json'       - surowy JSON w body (Google Apps Script, n8n, własne API) */
+  format: 'formsubmit',
+
   contactEmail: 'grzegorz.fijal@gmail.com',
   estimatedMinutes: 5,
 };
@@ -538,12 +548,14 @@ const SECTIONS = [
       },
       {
         id: 'reports_count', type: 'number', required: true, unit: 'raportów / źródeł',
+        emailLabel: 'Liczba raportów / źródeł',
         label: 'Jaka jest szacunkowa ilość stałych raportów/źródeł danych/paneli, '
           + 'w których znajdują się informacje ważne dla marek/produktów, którymi zarządzasz?',
         hint: 'Podaj przybliżoną liczbę.',
       },
       {
         id: 'analysis_capability', type: 'single', required: true,
+        emailLabel: 'Możliwości analizy raportów',
         label: 'Jak oceniasz swoje możliwości w zakresie analizy raportów?',
         options: [
           'Regularnie i szczegółowo analizuję wszystkie ważne raporty.',
@@ -565,6 +577,7 @@ const SECTIONS = [
     questions: [
       {
         id: 'what_is_it', type: 'textarea', required: true,
+        emailLabel: 'Czym to jest wg respondenta',
         label: 'Własnymi słowami: co robi ta aplikacja i dla kogo jest?',
         hint: 'Nie sprawdzamy Cię - sprawdzamy, czy produkt sam się tłumaczy. '
           + 'Napisz szczerze, także jeśli nie wiesz.',
@@ -574,6 +587,7 @@ const SECTIONS = [
       { type: 'tasks' },
       {
         id: 'first_impression_neg', type: 'textarea', required: true,
+        emailLabel: 'Co zirytowało',
         label: 'Co Cię najbardziej zirytowało, zmyliło lub rozczarowało?',
         hint: 'Ta odpowiedź jest dla nas najcenniejsza. Nie oszczędzaj nas.',
         minLength: 10,
@@ -588,16 +602,19 @@ const SECTIONS = [
     questions: [
       {
         id: 'must_have_top3', type: 'multi', required: true, max: 3,
+        emailLabel: 'Zapłaciłby za funkcje',
         label: 'Wybierz maksymalnie 3 funkcje, za które realnie zapłaciłbyś pieniędzmi',
         options: 'MODULE_LABELS',
       },
       {
         id: 'missing_features', type: 'textarea', required: true,
+        emailLabel: 'Czego brakuje',
         label: 'Czego brakuje, żeby to narzędzie było dla Ciebie naprawdę użyteczne?',
         minLength: 15,
       },
       {
         id: 'usage_freq', type: 'single', required: true,
+        emailLabel: 'Jak często by używał',
         label: 'Gdyby aplikacja była gotowa i podłączona do Twoich danych, '
           + 'jak często byś jej używał?',
         options: [
@@ -611,6 +628,7 @@ const SECTIONS = [
       },
       {
         id: 'blockers', type: 'multi', required: true,
+        emailLabel: 'Blokery wdrożenia',
         label: 'Co realnie zablokowałoby wdrożenie u Ciebie?',
         options: [
           'Brak integracji z moimi źródłami danych',
@@ -636,6 +654,7 @@ const SECTIONS = [
     questions: [
       {
         id: 'gg_intent', type: 'matrix', required: true,
+        emailLabel: 'Gotowość cenowa',
         label: 'Czy kupiłbyś abonament przy tej cenie miesięcznej? '
           + '(netto, za jednego użytkownika)',
         rows: 'PRICE_TIERS',
@@ -643,6 +662,7 @@ const SECTIONS = [
       },
       {
         id: 'decision_power', type: 'single', required: true,
+        emailLabel: 'Decyzyjność zakupowa',
         label: 'Czy decydujesz o zakupie narzędzi marketingowych, aplikacji czy subskrypcji?',
         options: [
           'Tak, decyduję samodzielnie',
@@ -653,6 +673,7 @@ const SECTIONS = [
       },
       {
         id: 'pmf', type: 'single', required: true,
+        emailLabel: 'PMF (gdyby stracił dostęp)',
         label: 'Jak byś się poczuł, gdybyś od dziś nie mógł już korzystać z tego narzędzia?',
         options: [
           'Bardzo rozczarowany',
@@ -663,11 +684,13 @@ const SECTIONS = [
       },
       {
         id: 'change_1', type: 'text', required: true,
+        emailLabel: 'Najważniejsza zmiana',
         label: 'Jedna najważniejsza rzecz, którą powinniśmy zmienić',
         minLength: 5,
       },
       {
         id: 'pilot_interest', type: 'single', required: true,
+        emailLabel: 'Pilotaż',
         label: 'Chciałbyś wziąć udział w pilotażu na swoich danych?',
         options: [
           'Tak, chętnie - odezwijcie się',
@@ -677,6 +700,7 @@ const SECTIONS = [
       },
       {
         id: 'email', type: 'email',
+        emailLabel: 'E-mail respondenta',
         label: 'E-mail (tylko jeśli chcesz, żebyśmy wrócili do Ciebie)',
         placeholder: 'imie@firma.pl',
       },
@@ -1094,7 +1118,7 @@ const M = (function () {
       qs.push({ type: 'info', id: `${t.id}_info`, title: t.title, body: t.instruction });
       qs.push({
         id: `${t.id}_outcome`, type: 'single', required: true,
-        label: 'Jak poszło?',
+        emailLabel: 'Wynik zadania', label: 'Jak poszło?',
         options: [
           'Wykonałem bez problemu',
           'Wykonałem, ale zajęło mi to za długo',
@@ -1105,12 +1129,13 @@ const M = (function () {
       });
       qs.push({
         id: `${t.id}_seq`, type: 'scale', required: true,
-        label: 'Jak łatwe było to zadanie?',
+        emailLabel: 'Łatwość zadania (1-7)', label: 'Jak łatwe było to zadanie?',
         min: 1, max: 7,
         labels: ['Bardzo trudne', '', '', 'Średnio', '', '', 'Bardzo łatwe'],
       });
       qs.push({
         id: `${t.id}_friction`, type: 'text',
+        emailLabel: 'Gdzie się zaciął',
         label: 'Gdzie się zaciąłeś? (jeśli nigdzie - zostaw puste)',
         placeholder: 'np. "nie wiedziałem, że trzeba kliknąć w wiersz tabeli"',
       });
@@ -1537,17 +1562,56 @@ const M = (function () {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  /* Odpowiedź w formie czytelnej w mailu: płaski obiekt "pytanie -> odpowiedź"
+     w kolejności z ankiety. Na końcu pełny JSON, żeby dało się go wkleić
+     do dashboardu i policzyć wskaźniki. */
+  function flattenForEmail(payload) {
+    const out = {
+      _subject: `Ankieta ${PRODUCT.name}: nowa odpowiedź`,
+      _template: 'table',
+      _captcha: 'false',
+    };
+    const fmt = (q, v) => {
+      if (v == null || v === '') return '';
+      if (Array.isArray(v)) return v.join(', ');
+      if (q.type === 'matrix') {
+        return q.rows
+          .map((row) => `${row.label}: ${q.cols[v[row.id]] || '-'}`)
+          .join('; ');
+      }
+      return String(v);
+    };
+
+    sections.forEach((sec) => {
+      sec.questions.filter(isInput).forEach((q) => {
+        const key = q.emailLabel || q.label;
+        const val = fmt(q, state.answers[q.id]);
+        const other = state.answers[q.id + '_other'];
+        if (val || other) out[key] = [val, other && `Inne: ${other}`].filter(Boolean).join(' | ');
+      });
+    });
+
+    out['Czas wypełniania'] = payload.durationSeconds
+      ? Math.round(payload.durationSeconds / 60) + ' min' : '';
+    out['Źródło linku'] = payload.source || '';
+    out['PEŁNE DANE (wklej do dashboardu)'] = JSON.stringify(payload);
+    return out;
+  }
+
   /* Wysyłka z twardym limitem czasu - bez tego przy padniętej sieci
      respondent gapi się w "Zapisujemy..." w nieskończoność. */
   async function postPayload(payload) {
+    const asEmail = SUBMIT.format === 'formsubmit';
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
     try {
-      // text/plain omija preflight CORS - wymagane przez Google Apps Script
       const res = await fetch(SUBMIT.endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload),
+        headers: asEmail
+          ? { 'Content-Type': 'application/json' }
+          // text/plain omija preflight CORS - wymagane przez Google Apps Script
+          : { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(asEmail ? flattenForEmail(payload) : payload),
         signal: ctrl.signal,
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);

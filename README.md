@@ -77,22 +77,35 @@ Testy wskaźników (23 przypadki, wartości policzone ręcznie):
 npm test        # albo: node test/metrics.test.mjs
 ```
 
-## 3. Publikacja
+## 3. Publikacja - jak uzyskać link do wysyłki
 
-Zwykłe pliki statyczne - nie ma builda:
+Ankieta to zwykłe pliki statyczne, bez builda. Repo jest publiczne, więc
+najprościej wystawić ją przez **GitHub Pages, za darmo i na stałe**:
 
-```bash
-npx vercel --prod          # albo netlify deploy --prod, albo GitHub Pages
-```
+1. Wejdź na `https://github.com/grzegorzfijal-create/Growth-Navigator-GF/settings/pages`
+2. **Source**: „Deploy from a branch"
+3. **Branch**: `claude/marketer-app-evaluation-0fyjrm`, folder `/ (root)` -> **Save**
+4. Po 1-2 minutach ankieta jest pod adresem:
+   `https://grzegorzfijal-create.github.io/Growth-Navigator-GF/`
 
-`results.html` też się opublikuje. Ma `noindex`, ale to nie jest zabezpieczenie -
-jeśli respondenci nie mają widzieć wyników, wdróż ankietę i dashboard osobno albo
-trzymaj `results.html` tylko lokalnie.
+Ten link wysyłasz marketerom. Dashboard z wynikami siedzi pod
+`https://grzegorzfijal-create.github.io/Growth-Navigator-GF/results.html`
+(ma `noindex`, ale jest publicznie dostępny - sam w sobie nie zawiera żadnych
+danych, liczy dopiero to, co mu wgrasz).
+
+Alternatywy, jeśli wolisz własną domenę: `npx vercel --prod` albo import repo
+na vercel.com / netlify.com. Konfiguracja jest ta sama.
+
+### Tagowanie źródła
+
+Dopisz `?r=nazwa` do linku, żeby wiedzieć, który kanał daje lepszych respondentów:
+`...github.io/Growth-Navigator-GF/?r=linkedin`. Wartość trafia do odpowiedzi
+i do maila jako „Źródło linku".
 
 ### Wersja jednoplikowa
 
 ```bash
-npm run build     # -> dist/ewaluacja.html (~91 kB, zero zewnętrznych zależności)
+npm run build     # -> dist/ewaluacja.html (~93 kB, zero zewnętrznych zależności)
 ```
 
 Ankieta + dashboard w jednym pliku HTML: działa z dysku, z załącznika w mailu
@@ -106,38 +119,57 @@ w `index.html` / `results.html` uruchom `npm run build` ponownie.
 
 **Ważne ograniczenie Artifactu na claude.ai.** Opublikowana tam strona ma zablokowane
 wszystkie żądania na zewnętrzne adresy, więc zapis odpowiedzi **nie zadziała** -
-niezależnie od tego, czy użyjesz Arkusza Google, Formspree czy własnego API.
-Nie da się tego obejść: udostępniona stronie lista uprawnień obejmuje tylko
-pobieranie pliku i konektory claude.ai zalogowanego widza, a żadne z tych dwóch
-nie nadaje się do zbierania odpowiedzi od obcych ludzi.
+niezależnie od tego, czy użyjesz FormSubmit, Arkusza Google czy własnego API.
+Artifact traktuj jako podgląd ankiety do pokazania komuś; do zbierania odpowiedzi
+używaj linku z GitHub Pages.
 
-Artifact traktuj więc jako **podgląd ankiety do pokazania komuś**. Do realnego
-zbierania odpowiedzi wdróż na Vercela (albo dowolny inny hosting statyczny).
+## 4. Odpowiedzi na maila - jednorazowa aktywacja
 
-## 4. Zbieranie odpowiedzi - to musisz zrobić, zanim wyślesz link
+Ankieta jest już ustawiona tak, że odpowiedzi lecą mailem na
+`grzegorz.fijal@gmail.com` przez FormSubmit (`SUBMIT.endpoint` w `assets/config.js`).
+Nie ma tu żadnego serwera do postawienia, ale **jest jeden krok, który musisz
+wykonać sam**:
 
-Ankieta jest stroną statyczną, więc **sama z siebie nie wyśle nic na Twojego maila** -
-potrzebuje adresu, pod który wysyła odpowiedzi. Dopóki `SUBMIT.endpoint` jest pusty,
-ankieta działa w trybie podglądu: przechodzi się ją normalnie, ale na końcu mówi
-wprost, że odpowiedzi nigdzie nie poleciały. To jest stan do testowania, nie do wysyłki.
+1. Wejdź na opublikowaną ankietę i wypełnij ją raz do końca (możesz klikać byle co).
+2. Na `grzegorz.fijal@gmail.com` przyjdzie mail od FormSubmit z linkiem
+   aktywacyjnym - kliknij go.
+3. Od tego momentu każda kolejna odpowiedź przychodzi na skrzynkę automatycznie.
 
-**Arkusz Google + mail (polecane, 5 minut, za darmo).**
-Pełna instrukcja krok po kroku jest na górze `backend/apps-script.gs`. W skrócie:
+**Dopóki nie klikniesz aktywacji, odpowiedzi nie dotrą** - a respondent i tak
+zobaczy ekran „zapisano", bo FormSubmit przyjmuje żądanie. Zrób ten krok, zanim
+wyślesz komukolwiek link.
 
-1. Nowy Arkusz Google -> Rozszerzenia -> Apps Script -> wklej `backend/apps-script.gs`.
-2. Ustaw `NOTIFY_EMAIL` na swój adres.
-3. Wdróż jako aplikację internetową: **Wykonaj jako: Ja**, **Kto ma dostęp: Wszyscy**.
-   To drugie jest obowiązkowe - przy innym ustawieniu przeglądarka respondenta dostanie
-   odmowę i zobaczy ekran „Nie udało się zapisać".
-4. Skopiuj URL wdrożenia do `SUBMIT.endpoint` w `assets/config.js`.
+### Co dostajesz w mailu
 
-Od tego momentu każda odpowiedź: ląduje w arkuszu, przychodzi do Ciebie mailem
-z podsumowaniem (rola, PMF, wynik zadania, ceny, odpowiedzi otwarte) i ma dopięty
-plik `.json` gotowy do wrzucenia w dashboard. Jeśli respondent zostawił swój adres,
-mail ma ustawione `reply-to` na niego - odpisujesz jednym kliknięciem.
+Tabelka „pytanie -> odpowiedź" w kolejności z ankiety: rola, typ organizacji,
+liczba raportów, wynik zadania i jego łatwość, na jakie ceny powiedział „tak",
+PMF, blokery, wszystkie odpowiedzi otwarte. Na końcu pole
+**„PEŁNE DANE (wklej do dashboardu)"** - skopiuj jego zawartość do
+`results.html`, żeby policzyć wskaźniki. Przy kilku odpowiedziach wklej je jako
+tablicę: `[{...}, {...}]`, albo każdą w osobnej linii.
 
-**Alternatywy** przyjmujące `POST` z JSON-em w body: Formspree, FormSubmit, n8n, własne API.
-Wpisujesz URL w to samo pole.
+### Dwie rzeczy, o których warto wiedzieć
+
+- **Adres jest widoczny w kodzie strony.** Repo jest publiczne, więc boty
+  spamowe mogą go zebrać. Po aktywacji FormSubmit daje losowy identyfikator,
+  którego można użyć zamiast adresu (`https://formsubmit.co/ajax/<token>`) -
+  podmień go w `SUBMIT.endpoint`, jeśli chcesz ukryć maila.
+- **Darmowy plan ma limity przepustowości.** Do kilkudziesięciu odpowiedzi
+  w zupełności wystarczy; przy większej skali przełącz się na Arkusz Google.
+
+### Wariant z Arkuszem Google (gdy uzbierasz więcej odpowiedzi)
+
+`backend/apps-script.gs` zawiera gotowy skrypt: zapisuje odpowiedzi do arkusza,
+wysyła mail z podsumowaniem i dopina plik `.json` gotowy do wrzucenia w dashboard.
+Instrukcja jest na górze tego pliku. Po wdrożeniu podmień w `assets/config.js`:
+
+```js
+endpoint: 'https://script.google.com/macros/s/.../exec',
+format: 'json',
+```
+
+Przewaga nad FormSubmit: wszystkie odpowiedzi w jednym arkuszu, bez limitów
+i bez pośrednika, przez którego przechodzą dane respondentów.
 
 ### Co widzi respondent
 
@@ -145,14 +177,6 @@ Ostatni przycisk ankiety to **„Zapisz moje odpowiedzi"** i to jedyne, co musi 
 Wysyłka ma 15-sekundowy limit czasu. Jeśli się nie uda, dostaje ekran z przyciskiem
 „Spróbuj ponownie" (odpowiedzi cały czas siedzą w `localStorage`, więc nic nie ginie),
 a jako ostateczność - pobranie pliku. Nikt nie jest proszony o wysyłanie maila ręcznie.
-
-### Skąd wziąć dane do dashboardu
-
-- Z maili: przeciągnij załączone pliki `.json` na `results.html`.
-- Z arkusza: skopiuj kolumnę `json` z zakładki `raw` i wklej w pole „Wklej JSON"
-  (przyjmuje też JSON-per-linia).
-
-Wszystko liczy się w przeglądarce, dane nigdzie nie wychodzą.
 
 ## 5. Rekrutacja - inaczej cały ten aparat pomiarowy nie ma czego mierzyć
 
