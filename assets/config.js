@@ -17,8 +17,9 @@ const PRODUCT = {
 
   // Opis, który zobaczy marketer PRZED wejściem do dema.
   // Trzymaj neutralnie - nie sprzedawaj, bo zaburzysz odpowiedzi o wartości.
+  // Pierwsze zdanie tego opisu jest teraz nagłówkiem strony (h1 w index.html).
   pitch:
-    'Budujemy narzędzie, wspierające marketerów. Trend Alert pomaga w szybszym ' +
+    'Trend Alert pomaga w szybszym ' +
     'i trafniejszym podejmowaniu decyzji opartych na danych. Narzędzie może ' +
     'integrować dane z Twoich raportów, paneli i innych źródeł. Analizuje jako ' +
     'jeden spójny obraz zamiast wielu oddzielnych zestawień. Kluczowe informacje ' +
