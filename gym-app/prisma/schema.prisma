@@ -1,0 +1,513 @@
+// Model danych: plan treningowy (zamiar) jest oddzielony od wykonanego treningu (fakt).
+// Plan mowi "Bench Press 4 x 8-10", a WorkoutSession przechowuje to, co naprawde podniosles.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- uzytkownik
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum WeightUnit {
+  KG
+  LB
+}
+
+enum HeightUnit {
+  CM
+  FT
+}
+
+enum EffortScale {
+  RPE
+  RIR
+  BOTH
+}
+
+enum Goal {
+  CUT
+  MAINTAIN
+  BULK
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  HIGH
+  VERY_HIGH
+}
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  name         String?
+  passwordHash String
+
+  // preferencje
+  weightUnit  WeightUnit    @default(KG)
+  heightUnit  HeightUnit    @default(CM)
+  effortScale EffortScale   @default(BOTH)
+  sex         Sex?
+  birthYear   Int?
+  heightCm    Float?
+  goal        Goal          @default(MAINTAIN)
+  activity    ActivityLevel @default(MODERATE)
+  plateStep   Float         @default(2.5) // najmniejszy realny przyrost obciazenia
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authSessions      AuthSession[]
+  exercises         Exercise[]
+  plans             WorkoutPlan[]
+  workoutSessions   WorkoutSession[]
+  bodyWeightEntries BodyWeightEntry[]
+  meals             Meal[]
+  nutritionGoal     NutritionGoal?
+  foods             Food[]
+  supplements       Supplement[]
+  supplementLogs    SupplementLog[]
+  personalRecords   PersonalRecord[]
+  scheduled         ScheduledWorkout[]
+  reminders         Reminder[]
+  insights          CoachInsight[]
+}
+
+// Sesja logowania - token trzymamy wylacznie jako hash sha256.
+model AuthSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+
+  @@index([userId])
+}
+
+// ----------------------------------------------------------------- cwiczenia
+
+enum ExerciseCategory {
+  CHEST
+  BACK
+  SHOULDERS
+  BICEPS
+  TRICEPS
+  LEGS
+  GLUTES
+  CORE
+  CARDIO
+  FULL_BODY
+}
+
+enum ExerciseType {
+  BARBELL
+  DUMBBELL
+  MACHINE
+  CABLE
+  BODYWEIGHT
+  KETTLEBELL
+  BAND
+  CARDIO
+  OTHER
+}
+
+// Jednostka obciazenia dla cwiczenia. TIME i DISTANCE obsluguja cardio i plank.
+enum ExerciseUnit {
+  KG
+  LB
+  BODYWEIGHT
+  TIME
+  DISTANCE
+}
+
+model Exercise {
+  id               String           @id @default(cuid())
+  userId           String? // null = cwiczenie systemowe, widoczne dla wszystkich
+  user             User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  category         ExerciseCategory
+  primaryMuscle    String
+  secondaryMuscles String[]         @default([])
+  type             ExerciseType     @default(BARBELL)
+  unit             ExerciseUnit     @default(KG)
+  plateStep        Float? // ile realnie dokladasz na tym sprzecie
+  description      String?
+  instructions     String?
+  isArchived       Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workoutExercises WorkoutExercise[]
+  sessionExercises SessionExercise[]
+  personalRecords  PersonalRecord[]
+
+  @@index([userId])
+  @@index([category])
+}
+
+// ------------------------------------------------------------ plan treningowy
+
+model WorkoutPlan {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  isActive    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workouts Workout[]
+  sessions WorkoutSession[]
+
+  @@index([userId])
+}
+
+// Pojedynczy trening w planie - Push, Pull, Legs, Upper, Lower...
+model Workout {
+  id               String  @id @default(cuid())
+  planId           String
+  plan             WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name             String
+  description      String?
+  order            Int     @default(0)
+  estimatedMinutes Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exercises WorkoutExercise[]
+  sessions  WorkoutSession[]
+  scheduled ScheduledWorkout[]
+
+  @@index([planId])
+}
+
+// Konfiguracja cwiczenia w planie: ile serii, jaki zakres, jakie RPE.
+// supersetGroup grupuje cwiczenia w superserie (A1, A2) - model jest juz na to gotowy.
+model WorkoutExercise {
+  id            String   @id @default(cuid())
+  workoutId     String
+  workout       Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exerciseId    String
+  exercise      Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  order         Int      @default(0)
+  sets          Int      @default(3)
+  repsMin       Int?
+  repsMax       Int?
+  targetWeight  Float?
+  targetRpe     Float?
+  targetRir     Float?
+  restSeconds   Int      @default(120)
+  tempo         String?
+  note          String?
+  supersetGroup String? // "A" => A1, A2 wykonywane naprzemiennie
+
+  @@index([workoutId])
+  @@index([exerciseId])
+}
+
+// ---------------------------------------------------------- wykonany trening
+
+model WorkoutSession {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workoutId  String?
+  workout    Workout?     @relation(fields: [workoutId], references: [id], onDelete: SetNull)
+  planId     String?
+  plan       WorkoutPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  name       String
+  date       DateTime  @db.Date
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  note       String?
+  rating     Int? // 1-5, subiektywna ocena treningu
+  bodyWeight Float?
+
+  // wartosci liczone przy zapisie serii - zeby statystyki nie musialy skanowac wszystkiego
+  totalVolume Float @default(0)
+  totalSets   Int   @default(0)
+  totalReps   Int   @default(0)
+  avgRpe      Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries   SessionExercise[]
+  scheduled ScheduledWorkout[]
+
+  @@index([userId, date])
+  @@index([userId, finishedAt])
+}
+
+model SessionExercise {
+  id         String         @id @default(cuid())
+  sessionId  String
+  session    WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  order      Int            @default(0)
+  note       String?
+  supersetGroup String?
+
+  // kopia zalozen z planu - historia nie moze sie zmieniac, gdy edytujesz plan
+  targetSets    Int?
+  targetRepsMin Int?
+  targetRepsMax Int?
+  targetRpe     Float?
+  restSeconds   Int?
+
+  sets WorkoutSet[]
+
+  @@index([sessionId])
+  @@index([exerciseId])
+}
+
+model WorkoutSet {
+  id                String          @id @default(cuid())
+  sessionExerciseId String
+  sessionExercise   SessionExercise @relation(fields: [sessionExerciseId], references: [id], onDelete: Cascade)
+  setNumber         Int
+  weight            Float?
+  reps              Int?
+  rpe               Float?
+  rir               Float?
+  isWarmup          Boolean         @default(false)
+  isCompleted       Boolean         @default(false)
+  note              String?
+  completedAt       DateTime?
+
+  // pochodne, liczone przy zapisie
+  volume       Float  @default(0)
+  estimated1rm Float?
+
+  @@unique([sessionExerciseId, setNumber])
+  @@index([sessionExerciseId])
+}
+
+// ------------------------------------------------------------------ kalendarz
+
+enum ScheduleStatus {
+  PLANNED
+  COMPLETED
+  SKIPPED
+  REST
+}
+
+model ScheduledWorkout {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workoutId String?
+  workout   Workout?        @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  sessionId String?
+  session   WorkoutSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  date      DateTime        @db.Date
+  status    ScheduleStatus  @default(PLANNED)
+  note      String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date, workoutId])
+  @@index([userId, date])
+}
+
+// ------------------------------------------------------------------- rekordy
+
+enum PrType {
+  MAX_WEIGHT
+  MAX_REPS
+  BEST_E1RM
+  MAX_VOLUME
+}
+
+model PersonalRecord {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  type       PrType
+  value      Float
+  weight     Float?
+  reps       Int?
+  achievedAt DateTime
+  sessionId  String?
+
+  @@unique([userId, exerciseId, type])
+  @@index([userId])
+}
+
+// --------------------------------------------------------------- masa ciala
+
+model BodyWeightEntry {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date   DateTime @db.Date
+  weight Float
+  note   String?
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+// -------------------------------------------------------------------- dieta
+
+model NutritionGoal {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calories Int
+  protein  Int
+  carbs    Int
+  fat      Int
+
+  updatedAt DateTime @updatedAt
+}
+
+model Meal {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date   DateTime @db.Date
+  name   String
+  time   String? // "08:30"
+  note   String?
+  order  Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  entries NutritionEntry[]
+
+  @@index([userId, date])
+}
+
+// Pojedyncza pozycja w posilku. foodId pozwoli podpiac baze produktow bez migracji danych.
+model NutritionEntry {
+  id       String  @id @default(cuid())
+  mealId   String
+  meal     Meal    @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  name     String
+  quantity Float?
+  unit     String? @default("g")
+  calories Float   @default(0)
+  protein  Float   @default(0)
+  carbs    Float   @default(0)
+  fat      Float   @default(0)
+  foodId   String?
+  food     Food?   @relation(fields: [foodId], references: [id], onDelete: SetNull)
+
+  @@index([mealId])
+}
+
+// Zalazek bazy produktow - wartosci na 100 g lub na sztuke.
+model Food {
+  id       String  @id @default(cuid())
+  userId   String?
+  user     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name     String
+  brand    String?
+  per      String  @default("100g") // "100g" albo "szt"
+  calories Float
+  protein  Float
+  carbs    Float
+  fat      Float
+
+  createdAt DateTime @default(now())
+
+  entries NutritionEntry[]
+
+  @@index([userId])
+  @@index([name])
+}
+
+// ------------------------------------------------------------- suplementacja
+
+model Supplement {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  dose       Float?
+  unit       String   @default("g")
+  timing     String[] @default([]) // MORNING, PRE_WORKOUT, POST_WORKOUT, EVENING
+  daysOfWeek Int[]    @default([1, 2, 3, 4, 5, 6, 7]) // 1 = poniedzialek
+  note       String?
+  isActive   Boolean  @default(true)
+  order      Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  logs SupplementLog[]
+
+  @@index([userId])
+}
+
+model SupplementLog {
+  id           String     @id @default(cuid())
+  supplementId String
+  supplement   Supplement @relation(fields: [supplementId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime   @db.Date
+  timing       String     @default("ANY")
+  takenAt      DateTime   @default(now())
+
+  @@unique([supplementId, date, timing])
+  @@index([userId, date])
+}
+
+// ----------------------------------------- przygotowane pod przyszla rozbudowe
+
+enum ReminderType {
+  WORKOUT
+  SUPPLEMENT
+  MEAL
+}
+
+// Architektura pod powiadomienia - model gotowy, wysylka do dolozenia.
+model Reminder {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       ReminderType
+  time       String // "18:00"
+  daysOfWeek Int[]        @default([1, 2, 3, 4, 5, 6, 7])
+  enabled    Boolean      @default(true)
+  payload    Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Architektura pod AI Coach - wnioski generowane z historii treningow i diety.
+model CoachInsight {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        String // PROGRESS, VOLUME_BALANCE, CONSISTENCY, NUTRITION...
+  title       String
+  body        String
+  data        Json?
+  createdAt   DateTime  @default(now())
+  dismissedAt DateTime?
+
+  @@index([userId, createdAt])
+}
