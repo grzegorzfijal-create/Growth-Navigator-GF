@@ -1,26 +1,149 @@
 @import "tailwindcss";
 
+/* Motyw przełączamy klasą na <html>, nie preferencją systemu - użytkownik decyduje. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Paleta inspirowana torem wyścigowym: karbonowa czerń, sygnaturowa czerwień
+  numeru 93 i biel liternictwa. Jeden kolor akcentu, reszta neutralna.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f3f3f4;
+  --surface: #ffffff;
+  --surface-2: #ececed;
+  --foreground: #0b0b0c;
+  --muted: #64656b;
+  --border: #e1e1e4;
+  --accent: #e5290b;
+  --accent-strong: #c22208;
+  --accent-foreground: #ffffff;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --info: #2563eb;
+  --grid: rgba(11, 11, 12, 0.06);
+}
+
+.dark {
+  --background: #0a0a0b;
+  --surface: #141416;
+  --surface-2: #1d1e21;
+  --foreground: #f2f2f3;
+  --muted: #8a8b91;
+  --border: #2a2b2f;
+  --accent: #ff3d17;
+  --accent-strong: #e5290b;
+  --accent-foreground: #ffffff;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --grid: rgba(255, 255, 255, 0.05);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Telefon w dłoni: bez gumowego scrolla i bez przypadkowego zoomu. */
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Liternictwo numeru startowego: pochylone, wersalikowe, ciasne. */
+.display {
+  font-family: var(--font-display), "Arial Narrow", ui-sans-serif, sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.95;
+}
+
+/* Liczby w tabelach serii muszą mieć stałą szerokość, inaczej UI skacze. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Szachownica mety - używana przy rekordach i zakończonym treningu. */
+.checker {
+  background-image:
+    linear-gradient(45deg, currentColor 25%, transparent 25%, transparent 75%, currentColor 75%),
+    linear-gradient(45deg, currentColor 25%, transparent 25%, transparent 75%, currentColor 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+}
+
+/* Skos z liverii - delikatny motyw pod nagłówkami. */
+.livery {
+  background-image: repeating-linear-gradient(
+    115deg,
+    color-mix(in oklab, var(--accent) 22%, transparent) 0px,
+    color-mix(in oklab, var(--accent) 22%, transparent) 10px,
+    transparent 10px,
+    transparent 22px
+  );
+}
+
+/* Siatka asfaltu pod sekcją bohatera. */
+.track-grid {
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Pola liczbowe bez strzałek - na telefonie i tak wchodzi klawiatura numeryczna. */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@keyframes lights-out {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.animate-lights-out {
+  animation: lights-out 0.6s ease-in-out 4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

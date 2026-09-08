@@ -1,0 +1,47 @@
+{
+  "name": "93 Trening - plan, progresja, dieta",
+  "short_name": "93 Trening",
+  "description": "Plany treningowe, logowanie serii z RPE i RIR, progresja, kalendarz, dieta i suplementacja.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
+  "lang": "pl",
+  "categories": [
+    "health",
+    "fitness",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Rozpocznij trening",
+      "url": "/trening",
+      "description": "Wejdź prosto w tryb treningowy"
+    },
+    {
+      "name": "Dieta",
+      "url": "/dieta",
+      "description": "Dodaj posiłek"
+    }
+  ]
+}
