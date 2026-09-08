@@ -1,5 +1,5 @@
 // Model danych: plan treningowy (zamiar) jest oddzielony od wykonanego treningu (fakt).
-// Plan mowi "Bench Press 4 x 8-10", a WorkoutSession przechowuje to, co naprawde podniosles.
+// Plan mówi "Bench Press 4 x 8-10", a WorkoutSession przechowuje to, co naprawdę podniosłeś.
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,7 +9,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------------------------------------------------------------- uzytkownik
+// ---------------------------------------------------------------- użytkownik
 
 enum Sex {
   MALE
@@ -82,7 +82,7 @@ model User {
   insights          CoachInsight[]
 }
 
-// Sesja logowania - token trzymamy wylacznie jako hash sha256.
+// Sesja logowania - token trzymamy wyłącznie jako hash sha256.
 model AuthSession {
   id        String   @id @default(cuid())
   tokenHash String   @unique
@@ -95,7 +95,7 @@ model AuthSession {
   @@index([userId])
 }
 
-// ----------------------------------------------------------------- cwiczenia
+// ----------------------------------------------------------------- ćwiczenia
 
 enum ExerciseCategory {
   CHEST
@@ -122,7 +122,7 @@ enum ExerciseType {
   OTHER
 }
 
-// Jednostka obciazenia dla cwiczenia. TIME i DISTANCE obsluguja cardio i plank.
+// Jednostka obciążenia dla ćwiczenia. TIME i DISTANCE obsługują cardio i plank.
 enum ExerciseUnit {
   KG
   LB
@@ -178,12 +178,12 @@ model WorkoutPlan {
 
 // Pojedynczy trening w planie - Push, Pull, Legs, Upper, Lower...
 model Workout {
-  id               String  @id @default(cuid())
+  id               String      @id @default(cuid())
   planId           String
   plan             WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   name             String
   description      String?
-  order            Int     @default(0)
+  order            Int         @default(0)
   estimatedMinutes Int?
 
   createdAt DateTime @default(now())
@@ -196,8 +196,8 @@ model Workout {
   @@index([planId])
 }
 
-// Konfiguracja cwiczenia w planie: ile serii, jaki zakres, jakie RPE.
-// supersetGroup grupuje cwiczenia w superserie (A1, A2) - model jest juz na to gotowy.
+// Konfiguracja ćwiczenia w planie: ile serii, jaki zakres, jakie RPE.
+// supersetGroup grupuje ćwiczenia w superserie (A1, A2) - model jest już na to gotowy.
 model WorkoutExercise {
   id            String   @id @default(cuid())
   workoutId     String
@@ -223,13 +223,13 @@ model WorkoutExercise {
 // ---------------------------------------------------------- wykonany trening
 
 model WorkoutSession {
-  id         String       @id @default(cuid())
-  userId     String
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workoutId  String?
-  workout    Workout?     @relation(fields: [workoutId], references: [id], onDelete: SetNull)
-  planId     String?
-  plan       WorkoutPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workoutId String?
+  workout   Workout?     @relation(fields: [workoutId], references: [id], onDelete: SetNull)
+  planId    String?
+  plan      WorkoutPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
 
   name       String
   date       DateTime  @db.Date
@@ -239,10 +239,10 @@ model WorkoutSession {
   rating     Int? // 1-5, subiektywna ocena treningu
   bodyWeight Float?
 
-  // wartosci liczone przy zapisie serii - zeby statystyki nie musialy skanowac wszystkiego
-  totalVolume Float @default(0)
-  totalSets   Int   @default(0)
-  totalReps   Int   @default(0)
+  // wartości liczone przy zapisie serii - żeby statystyki nie musiały skanować wszystkiego
+  totalVolume Float  @default(0)
+  totalSets   Int    @default(0)
+  totalReps   Int    @default(0)
   avgRpe      Float?
 
   createdAt DateTime @default(now())
@@ -256,16 +256,16 @@ model WorkoutSession {
 }
 
 model SessionExercise {
-  id         String         @id @default(cuid())
-  sessionId  String
-  session    WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  exerciseId String
-  exercise   Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
-  order      Int            @default(0)
-  note       String?
+  id            String         @id @default(cuid())
+  sessionId     String
+  session       WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exerciseId    String
+  exercise      Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  order         Int            @default(0)
+  note          String?
   supersetGroup String?
 
-  // kopia zalozen z planu - historia nie moze sie zmieniac, gdy edytujesz plan
+  // kopia założeń z planu - historia nie może się zmieniać, gdy edytujesz plan
   targetSets    Int?
   targetRepsMin Int?
   targetRepsMax Int?
@@ -353,7 +353,7 @@ model PersonalRecord {
   @@index([userId])
 }
 
-// --------------------------------------------------------------- masa ciala
+// --------------------------------------------------------------- masa ciała
 
 model BodyWeightEntry {
   id     String   @id @default(cuid())
@@ -398,7 +398,7 @@ model Meal {
   @@index([userId, date])
 }
 
-// Pojedyncza pozycja w posilku. foodId pozwoli podpiac baze produktow bez migracji danych.
+// Pojedyncza pozycja w posiłku. foodId pozwoli podpiąć bazę produktów bez migracji danych.
 model NutritionEntry {
   id       String  @id @default(cuid())
   mealId   String
@@ -416,7 +416,7 @@ model NutritionEntry {
   @@index([mealId])
 }
 
-// Zalazek bazy produktow - wartosci na 100 g lub na sztuke.
+// Zalążek bazy produktów - wartości na 100 g lub na sztukę.
 model Food {
   id       String  @id @default(cuid())
   userId   String?
@@ -473,7 +473,7 @@ model SupplementLog {
   @@index([userId, date])
 }
 
-// ----------------------------------------- przygotowane pod przyszla rozbudowe
+// ----------------------------------------- przygotowane pod przyszłą rozbudowę
 
 enum ReminderType {
   WORKOUT
@@ -481,7 +481,7 @@ enum ReminderType {
   MEAL
 }
 
-// Architektura pod powiadomienia - model gotowy, wysylka do dolozenia.
+// Architektura pod powiadomienia - model gotowy, wysyłka do dołożenia.
 model Reminder {
   id         String       @id @default(cuid())
   userId     String
@@ -497,7 +497,7 @@ model Reminder {
   @@index([userId])
 }
 
-// Architektura pod AI Coach - wnioski generowane z historii treningow i diety.
+// Architektura pod AI Coach - wnioski generowane z historii treningów i diety.
 model CoachInsight {
   id          String    @id @default(cuid())
   userId      String

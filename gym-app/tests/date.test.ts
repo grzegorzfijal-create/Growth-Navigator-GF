@@ -5,6 +5,7 @@ import {
   daysBetween,
   formatDayMonth,
   formatDuration,
+  formatMinutes,
   isoWeekday,
   monthGrid,
   relativeDayLabel,
@@ -34,14 +35,26 @@ test("siatka miesiaca to pelne tygodnie", () => {
 });
 
 test("etykiety dat po polsku", () => {
-  assert.equal(formatDayMonth("2026-09-12"), "12 wrzesnia");
+  assert.equal(formatDayMonth("2026-09-12"), "12 września");
   assert.equal(relativeDayLabel("2026-09-08", "2026-09-08"), "Dzisiaj");
   assert.equal(relativeDayLabel("2026-09-07", "2026-09-08"), "Wczoraj");
-  assert.equal(relativeDayLabel("2026-09-01", "2026-09-08"), "1 wrzesnia");
+  assert.equal(relativeDayLabel("2026-09-01", "2026-09-08"), "1 września");
 });
 
 test("czas treningu i stopera", () => {
+  assert.equal(formatMinutes(0), "<1 min");
+  assert.equal(formatMinutes(62), "1 h 2 min");
   assert.equal(formatDuration(102), "1:42");
   assert.equal(formatDuration(59), "0:59");
   assert.equal(formatDuration(3720), "1h 02m");
+});
+
+test("polska odmiana liczebników", async () => {
+  const { plural } = await import("../src/lib/utils.ts");
+  const forms: [string, string, string] = ["zmiana", "zmiany", "zmian"];
+  assert.equal(plural(1, forms), "zmiana");
+  assert.equal(plural(3, forms), "zmiany");
+  assert.equal(plural(5, forms), "zmian");
+  assert.equal(plural(12, forms), "zmian");
+  assert.equal(plural(22, forms), "zmiany");
 });

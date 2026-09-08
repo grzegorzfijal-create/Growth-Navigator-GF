@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
+/**
+ * Ikonę wybiera CSS na podstawie klasy motywu na <html>, a nie stan komponentu -
+ * dzięki temu nie ma migotania ani rozjazdu między serwerem a klientem.
+ */
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // Motyw znamy dopiero po stronie klienta - do tego czasu rysujemy pustą ikonę.
-  useEffect(() => setMounted(true), []);
 
   return (
     <Button
@@ -20,7 +19,8 @@ export function ThemeToggle() {
       aria-label="Przełącz motyw"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
-      {mounted && resolvedTheme === "dark" ? <Sun className="size-4.5" /> : <Moon className="size-4.5" />}
+      <Sun className="hidden size-4.5 dark:block" />
+      <Moon className="size-4.5 dark:hidden" />
     </Button>
   );
 }

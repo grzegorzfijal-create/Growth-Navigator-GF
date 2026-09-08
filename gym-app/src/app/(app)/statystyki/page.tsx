@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Trophy } from "lucide-react";
+import { Lightbulb, Trophy } from "lucide-react";
 
 import { ProgressChart } from "@/components/charts/progress-chart";
 import { VolumeBars } from "@/components/charts/volume-bars";
@@ -12,6 +12,7 @@ import { PR_LABELS } from "@/lib/labels";
 import { formatNumber, formatVolume } from "@/lib/utils";
 import { requireUser } from "@/server/auth";
 import { prisma } from "@/server/db";
+import { getCoachInsights } from "@/server/queries/coach";
 import { getPersonalRecords, getTrainingStats, getVolumeByMuscle, getWeeklyVolume } from "@/server/queries/training";
 
 export const metadata: Metadata = { title: "Statystyki" };
@@ -20,12 +21,13 @@ export default async function StatsPage() {
   const user = await requireUser();
   const today = todayIso();
 
-  const [stats, weekly, muscles, records, bodyWeights] = await Promise.all([
+  const [stats, weekly, muscles, records, bodyWeights, insights] = await Promise.all([
     getTrainingStats(user.id, today),
     getWeeklyVolume(user.id, 8, today),
     getVolumeByMuscle(user.id, addDays(today, -27), today),
     getPersonalRecords(user.id),
     prisma.bodyWeightEntry.findMany({ where: { userId: user.id }, orderBy: { date: "asc" }, take: 120 }),
+    getCoachInsights(user.id, today),
   ]);
 
   const bestLifts = records.filter((record) => record.type === "BEST_E1RM").slice(0, 8);
@@ -43,6 +45,28 @@ export default async function StatsPage() {
         <Stat label="Serie" value={stats.totalSets} />
         <Stat label="Śr. RPE" value={stats.avgRpe ?? "-"} />
       </div>
+
+      {insights.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="size-4.5 text-muted" /> Obserwacje
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {insights.map((insight) => (
+              <div key={insight.title} className="rounded-xl border border-border p-3">
+                <p className="font-semibold">{insight.title}</p>
+                <p className="mt-0.5 text-sm text-muted">{insight.body}</p>
+              </div>
+            ))}
+            <p className="text-xs text-muted">
+              Wnioski liczone z Twojej historii według stałych reguł. Ten sam zestaw danych trafi kiedyś
+              do modelu językowego - miejsce na to jest już przygotowane.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

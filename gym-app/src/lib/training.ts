@@ -1,6 +1,6 @@
 /**
- * Matematyka treningowa. Czyste funkcje, zero zaleznosci od bazy i Reacta -
- * dzieki temu ta sama logika dziala na serwerze, w kliencie i w testach.
+ * Matematyka treningowa. Czyste funkcje, zero zależności od bazy i Reacta -
+ * dzięki temu ta sama logika działa na serwerze, w kliencie i w testach.
  */
 
 export type SetLike = {
@@ -29,7 +29,7 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/** Zaokraglenie do realnego obciazenia - na sztange wchodza talerze parami. */
+/** Zaokrąglenie do realnego obciążenia - na sztangę wchodzą talerze parami. */
 export function roundToPlate(weight: number, step = 2.5): number {
   if (!Number.isFinite(weight)) return 0;
   if (!step || step <= 0) return round(weight, 1);
@@ -39,8 +39,8 @@ export function roundToPlate(weight: number, step = 2.5): number {
 /* ------------------------------------------------------------------ RPE/RIR */
 
 /**
- * RPE 10 = zero powtorzen w zapasie, RPE 8 = zostaly 2.
- * Poza zakresem 5-10 skala przestaje byc uzyteczna, wiec ja przycinamy.
+ * RPE 10 = zero powtórzeń w zapasie, RPE 8 = zostały 2.
+ * Poza zakresem 5-10 skala przestaje być użyteczna, więc ją przycinamy.
  */
 export function rpeToRir(rpe: number): number {
   return round(clamp(10 - rpe, 0, 5), 1);
@@ -51,13 +51,13 @@ export function rirToRpe(rir: number): number {
 }
 
 /**
- * Tabela RTS: procent ciezaru maksymalnego dla "efektywnych powtorzen",
- * czyli powtorzen wykonanych + powtorzen zostawionych w zapasie (RIR).
- * Indeks 0 to jedno powtorzenie na RPE 10 = 100% maksa.
+ * Tabela RTS: procent ciężaru maksymalnego dla "efektywnych powtórzeń",
+ * czyli powtórzeń wykonanych + powtórzeń zostawionych w zapasie (RIR).
+ * Indeks 0 to jedno powtórzenie na RPE 10 = 100% maksa.
  */
 const RPE_TABLE = [100, 95.5, 92.2, 89.2, 86.3, 83.7, 81.1, 78.6, 76.2, 73.9, 70.7, 68.0];
 
-/** Ile procent maksa wazy seria: X powtorzen zakonczonych na danym RPE. */
+/** Ile procent maksa waży seria: X powtórzeń zakończonych na danym RPE. */
 export function percentOf1rm(reps: number, rpe?: number | null): number | null {
   if (!Number.isFinite(reps) || reps < 1) return null;
   const effective = reps + (rpe != null && Number.isFinite(rpe) ? 10 - clamp(rpe, 4, 10) : 0);
@@ -65,22 +65,22 @@ export function percentOf1rm(reps: number, rpe?: number | null): number | null {
   const index = Math.floor(effective) - 1;
   const frac = effective - Math.floor(effective);
   if (index >= RPE_TABLE.length - 1) {
-    // Poza tabela schodzimy liniowo - i tak nikt nie planuje serii po 15 powtorzen na maksa.
+    // Poza tabelą schodzimy liniowo - i tak nikt nie planuje serii po 15 powtórzeń na maksa.
     const last = RPE_TABLE[RPE_TABLE.length - 1];
     return round(Math.max(30, last - (effective - RPE_TABLE.length) * 1.3), 1);
   }
   return round(RPE_TABLE[index] + (RPE_TABLE[index + 1] - RPE_TABLE[index]) * frac, 1);
 }
 
-/** Klasyczny wzor Epleya - prosty i powszechnie uzywany. */
+/** Klasyczny wzór Epleya - prosty i powszechnie używany. */
 export function epley1rm(weight: number, reps: number): number | null {
   if (!Number.isFinite(weight) || weight <= 0 || !Number.isFinite(reps) || reps < 1) return null;
   return round(weight * (1 + reps / 30), 1);
 }
 
 /**
- * Szacowane 1RM. Gdy znamy RPE, liczymy z tabeli (uwzglednia zapas),
- * bez RPE wracamy do Epleya, ktory zaklada serie do upadku.
+ * Szacowane 1RM. Gdy znamy RPE, liczymy z tabeli (uwzględnia zapas),
+ * bez RPE wracamy do Epleya, który zakłada serię do upadku.
  */
 export function estimate1rm(weight?: number | null, reps?: number | null, rpe?: number | null): number | null {
   if (weight == null || reps == null) return null;
@@ -91,7 +91,7 @@ export function estimate1rm(weight?: number | null, reps?: number | null, rpe?: 
   return round((weight * 100) / pct, 1);
 }
 
-/** Ile kilo wziac, zeby zrobic X powtorzen na zadanym RPE. */
+/** Ile kilo wziąć, żeby zrobić X powtórzeń na zadanym RPE. */
 export function weightForReps(oneRm: number, reps: number, rpe = 8, step = 2.5): number | null {
   if (!Number.isFinite(oneRm) || oneRm <= 0) return null;
   const pct = percentOf1rm(reps, rpe);
@@ -128,7 +128,7 @@ export function sessionTotals(sets: SetLike[]): SessionTotals {
   };
 }
 
-/** Najlepsza seria mierzona szacowanym maksem, a nie samym ciezarem. */
+/** Najlepsza seria mierzona szacowanym maksem, a nie samym ciężarem. */
 export function bestSet<T extends SetLike>(sets: T[]): (T & { estimated1rm: number }) | null {
   let best: (T & { estimated1rm: number }) | null = null;
   for (const set of sets.filter(isWorkingSet)) {
@@ -150,9 +150,9 @@ export type WeightSuggestion = {
 };
 
 /**
- * Podpowiedz na kolejny trening. Zasada: najpierw domykasz zakres powtorzen,
- * dopiero potem dokladasz ciezar. Podpowiedz jest pomocnicza - nigdy nie
- * podbijamy ciezaru, gdy ostatnie serie szly na RPE 9+.
+ * Podpowiedź na kolejny trening. Zasada: najpierw domykasz zakres powtórzeń,
+ * dopiero potem dokładasz ciężar. Podpowiedź jest pomocnicza - nigdy nie
+ * podbijamy ciężaru, gdy ostatnie serie szły na RPE 9+.
  */
 export function suggestNextWeight(
   previousSets: SetLike[],
@@ -169,7 +169,7 @@ export function suggestNextWeight(
       action: "first-time",
       weight: null,
       reps: repsMin,
-      message: `Pierwszy raz - dobierz ciezar tak, zeby ${repsMin} powtorzen wyszlo na RPE ${targetRpe}.`,
+      message: `Pierwszy raz - dobierz ciężar tak, żeby ${repsMin} powtórzeń wyszło na RPE ${targetRpe}.`,
     };
   }
 
@@ -179,35 +179,35 @@ export function suggestNextWeight(
   const rpes = topSets.map((s) => s.rpe).filter((r): r is number => r != null);
   const avgRpe = rpes.length ? rpes.reduce((a, b) => a + b, 0) / rpes.length : null;
 
-  // Zakres domkniety i bylo lekko - czas dolozyc.
+  // Zakres domknięty i było lekko - czas dołożyć.
   if (minReps >= repsMax && (avgRpe == null || avgRpe <= targetRpe)) {
     const next = roundToPlate(topWeight + step, step);
     return {
       action: "increase",
       weight: next,
       reps: repsMin,
-      message: `Ostatnio ${topWeight} kg x ${minReps}${avgRpe != null ? ` @RPE ${round(avgRpe, 1)}` : ""} - sprobuj ${next} kg.`,
+      message: `Ostatnio ${topWeight} kg x ${minReps}${avgRpe != null ? ` @RPE ${round(avgRpe, 1)}` : ""} - spróbuj ${next} kg.`,
     };
   }
 
-  // Bylo bardzo ciezko i zakres nie dowieziony - zejscie o 10%.
+  // Było bardzo ciężko i zakres nie dowieziony - zejście o 10%.
   if (avgRpe != null && avgRpe >= 9.5 && minReps < repsMin) {
     const next = roundToPlate(topWeight * 0.9, step);
     return {
       action: "deload",
       weight: next,
       reps: repsMin,
-      message: `Ostatnio RPE ${round(avgRpe, 1)} przy ${minReps} powtorzeniach - zejdz na ${next} kg.`,
+      message: `Ostatnio RPE ${round(avgRpe, 1)} przy ${minReps} powtórzeniach - zejdź na ${next} kg.`,
     };
   }
 
-  // Zakres domkniety, ale ciezko - zostajemy na tym samym ciezarze.
+  // Zakres domknięty, ale ciężko - zostajemy na tym samym ciężarze.
   if (minReps >= repsMax) {
     return {
       action: "hold",
       weight: topWeight,
       reps: repsMax,
-      message: `Zostan na ${topWeight} kg - zakres domkniety, ale RPE bylo wysokie.`,
+      message: `Zostań na ${topWeight} kg - zakres domknięty, ale RPE było wysokie.`,
     };
   }
 
@@ -216,7 +216,7 @@ export function suggestNextWeight(
     action: "add-reps",
     weight: topWeight,
     reps: nextReps,
-    message: `Ten sam ciezar (${topWeight} kg), celuj w ${nextReps} powtorzen.`,
+    message: `Ten sam ciężar (${topWeight} kg), celuj w ${nextReps} powtórzeń.`,
   };
 }
 
@@ -229,7 +229,7 @@ export type PrCandidate = {
   maxVolume: number | null;
 };
 
-/** Kandydaci na rekordy z jednego wykonania cwiczenia w treningu. */
+/** Kandydaci na rekordy z jednego wykonania ćwiczenia w treningu. */
 export function prCandidates(sets: SetLike[]): PrCandidate {
   const working = sets.filter(isWorkingSet);
   if (working.length === 0) return { maxWeight: null, maxReps: null, bestE1rm: null, maxVolume: null };
@@ -244,7 +244,7 @@ export function prCandidates(sets: SetLike[]): PrCandidate {
 
 /* ---------------------------------------------------------------- statystyki */
 
-/** Nachylenie prostej trendu - dodatnie znaczy, ze idzie w gore. */
+/** Nachylenie prostej trendu - dodatnie znaczy, że idzie w górę. */
 export function trendSlope(values: number[]): number | null {
   const points = values.filter((v) => Number.isFinite(v));
   if (points.length < 2) return null;
@@ -261,14 +261,14 @@ export function trendSlope(values: number[]): number | null {
 
 /**
  * Seria treningowa liczona w tygodniach z co najmniej jednym treningiem.
- * Dni wolne nie zeruja passy - inaczej kazdy plan 3x w tygodniu mialby serie 1.
+ * Dni wolne nie zerują passy - inaczej każdy plan 3x w tygodniu miałby serię 1.
  */
 export function weeklyStreak(dates: string[], today: string): number {
   if (dates.length === 0) return 0;
   const weeks = new Set(dates.map(isoWeekKey));
   let cursor = new Date(`${today}T00:00:00`);
   let streak = 0;
-  // Biezacy tydzien bez treningu nie zeruje passy - tydzien jeszcze trwa.
+  // Bieżący tydzień bez treningu nie zeruje passy - tydzień jeszcze trwa.
   if (!weeks.has(isoWeekKey(toIso(cursor)))) cursor = shiftDays(cursor, -7);
   while (weeks.has(isoWeekKey(toIso(cursor)))) {
     streak += 1;
@@ -287,7 +287,7 @@ function toIso(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-/** Klucz tygodnia ISO, np. "2026-W37" - poniedzialek zaczyna tydzien. */
+/** Klucz tygodnia ISO, np. "2026-W37" - poniedziałek zaczyna tydzień. */
 export function isoWeekKey(iso: string): string {
   const date = new Date(`${iso}T00:00:00`);
   const day = (date.getDay() + 6) % 7;
@@ -299,7 +299,7 @@ export function isoWeekKey(iso: string): string {
   return `${thursday.getFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
-/** Ile treningow w ostatnich N dniach - odpowiada na pytanie "trzymam rytm?". */
+/** Ile treningów w ostatnich N dniach - odpowiada na pytanie "trzymam rytm?". */
 export function trainingFrequency(dates: string[], days: number, today: string): { count: number; perWeek: number } {
   const end = new Date(`${today}T00:00:00`);
   const start = shiftDays(end, -(days - 1));

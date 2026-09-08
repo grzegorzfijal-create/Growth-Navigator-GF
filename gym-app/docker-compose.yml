@@ -1,0 +1,23 @@
+# Lokalna baza do developmentu. Aplikacja łączy się przez DATABASE_URL z .env.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: gym-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gym
+      POSTGRES_PASSWORD: gym
+      POSTGRES_DB: gymtracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - gym-db:/var/lib/postgresql/data
+    healthcheck:
+      # Migracje i seed odpalamy dopiero, gdy baza faktycznie przyjmuje połączenia.
+      test: ["CMD-SHELL", "pg_isready -U gym -d gymtracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  gym-db:

@@ -16,7 +16,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useWorkoutSync } from "@/hooks/use-workout-sync";
 import { formatDuration } from "@/lib/date";
 import { sessionTotals } from "@/lib/training";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn, formatNumber, plural } from "@/lib/utils";
 import {
   addExerciseToSession,
   addSetToExercise,
@@ -42,7 +42,7 @@ export function WorkoutRunner({
   const [pending, startTransition] = useTransition();
   const inputs = useRef(new Map<string, HTMLInputElement>());
 
-  const { push, flushNow, status } = useWorkoutSync(session.id);
+  const { push, flushNow, status, pending: unsaved } = useWorkoutSync(session.id);
   const rest = useRestTimer(120);
 
   // Czas trwania liczymy z godziny startu, więc przetrwa odświeżenie strony.
@@ -229,7 +229,8 @@ export function WorkoutRunner({
             </>
           ) : status === "offline" ? (
             <>
-              <CloudOff className="size-3 text-warning" /> offline - wyniki czekają w telefonie
+              <CloudOff className="size-3 text-warning" /> offline - {unsaved}{" "}
+              {plural(unsaved, ["zmiana czeka", "zmiany czekają", "zmian czeka"])} w telefonie
             </>
           ) : status === "error" ? (
             <>

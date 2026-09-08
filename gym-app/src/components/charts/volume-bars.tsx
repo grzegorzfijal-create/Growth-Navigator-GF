@@ -35,7 +35,7 @@ export function VolumeBars({
             }}
             formatter={(value) => [`${formatNumber(Number(value))} kg`, "Objętość"]}
           />
-          <Bar dataKey="volume" fill="var(--accent)" radius={[6, 6, 0, 0]} maxBarSize={38} />
+          <Bar dataKey="volume" fill="var(--accent)" radius={[6, 6, 0, 0]} maxBarSize={38} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -75,6 +75,8 @@ export function ProgressChart({
             fill="url(#accentFade)"
             dot={{ r: 2.5, fill: "var(--accent)", strokeWidth: 0 }}
             activeDot={{ r: 4 }}
+            // Bez animacji rysowania - wykres ma być od razu gotowy do odczytu.
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>

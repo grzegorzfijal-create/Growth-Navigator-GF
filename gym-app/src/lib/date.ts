@@ -19,7 +19,7 @@ export function addDays(iso: string, days: number): string {
   return toIsoDate(date);
 }
 
-/** Poniedzialek jako pierwszy dzien tygodnia - tak liczy sie mikrocykl treningowy. */
+/** Poniedziałek jako pierwszy dzień tygodnia - tak liczy się mikrocykl treningowy. */
 export function startOfWeek(iso: string): string {
   const date = fromIsoDate(iso);
   const offset = (date.getDay() + 6) % 7;
@@ -37,7 +37,7 @@ export function daysBetween(from: string, to: string): number {
 
 export type CalendarCell = { date: string; day: number; inMonth: boolean; isToday: boolean };
 
-/** Siatka miesiaca: pelne tygodnie od poniedzialku, gotowa do wyrenderowania. */
+/** Siatka miesiąca: pełne tygodnie od poniedziałku, gotowa do wyrenderowania. */
 export function monthGrid(year: number, month: number, today = todayIso()): CalendarCell[][] {
   const first = toIsoDate(new Date(year, month, 1));
   let cursor = startOfWeek(first);
@@ -56,23 +56,23 @@ export function monthGrid(year: number, month: number, today = todayIso()): Cale
 }
 
 const MONTHS = [
-  "styczen", "luty", "marzec", "kwiecien", "maj", "czerwiec",
-  "lipiec", "sierpien", "wrzesien", "pazdziernik", "listopad", "grudzien",
+  "styczeń", "luty", "marzec", "kwiecień", "maj", "czerwiec",
+  "lipiec", "sierpień", "wrzesień", "październik", "listopad", "grudzień",
 ];
 const MONTHS_GENITIVE = [
   "stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca",
-  "lipca", "sierpnia", "wrzesnia", "pazdziernika", "listopada", "grudnia",
+  "lipca", "sierpnia", "września", "października", "listopada", "grudnia",
 ];
-export const WEEKDAY_SHORT = ["pon", "wt", "sr", "czw", "pt", "sob", "ndz"];
+export const WEEKDAY_SHORT = ["pon", "wt", "śr", "czw", "pt", "sob", "ndz"];
 export const WEEKDAY_LONG = [
-  "poniedzialek", "wtorek", "sroda", "czwartek", "piatek", "sobota", "niedziela",
+  "poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota", "niedziela",
 ];
 
 export function monthName(month: number): string {
   return MONTHS[month] ?? "";
 }
 
-/** "12 wrzesnia" albo "12 wrzesnia 2025", gdy rok inny niz biezacy. */
+/** "12 września" albo "12 września 2025", gdy rok inny niż bieżący. */
 export function formatDayMonth(iso: string, withYear = false): string {
   const date = fromIsoDate(iso);
   const base = `${date.getDate()} ${MONTHS_GENITIVE[date.getMonth()]}`;
@@ -83,7 +83,7 @@ export function weekdayLong(iso: string): string {
   return WEEKDAY_LONG[(fromIsoDate(iso).getDay() + 6) % 7];
 }
 
-/** Dzien tygodnia w konwencji 1 = poniedzialek (tak trzymamy dni suplementacji). */
+/** Dzień tygodnia w konwencji 1 = poniedziałek (tak trzymamy dni suplementacji). */
 export function isoWeekday(iso: string): number {
   return ((fromIsoDate(iso).getDay() + 6) % 7) + 1;
 }
@@ -107,6 +107,8 @@ export function formatDuration(seconds: number): string {
 }
 
 export function formatMinutes(minutes: number): string {
+  // Trening krótszy niż minuta to zwykle świeżo rozpoczęta sesja, nie "0 min".
+  if (minutes < 1) return "<1 min";
   if (minutes < 60) return `${minutes} min`;
   return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
 }

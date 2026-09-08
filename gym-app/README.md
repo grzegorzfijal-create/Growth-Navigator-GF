@@ -1,36 +1,171 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 93 Trening - aplikacja treningowa
 
-## Getting Started
+Aplikacja do prowadzenia treningu siłowego z telefonu: plan, logowanie serii z RPE/RIR,
+progresja, kalendarz, dieta i suplementacja. Zbudowana pod jedno konkretne zastosowanie -
+**telefon w dłoni, między seriami, na siłowni**.
 
-First, run the development server:
+Stack: Next.js 16 (App Router) + TypeScript + Tailwind CSS 4 + Prisma + PostgreSQL, wykresy na Recharts,
+walidacja Zod, formularze React Hook Form, PWA z service workerem.
+
+---
+
+## 1. Uruchomienie
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 1. baza danych (Docker)
+docker compose up -d
+
+# 2. konfiguracja
+cp .env.example .env        # DATABASE_URL wskazuje na bazę z docker-compose
+
+# 3. zależności, schemat, dane przykładowe
+npm install
+npx prisma migrate deploy   # albo: npm run db:migrate (tryb developerski)
+npm run seed
+
+# 4. start
+npm run dev                 # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Produkcyjnie: `npm run build && npm start`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Konto demo:** `demo@gym.app` / `trening123`
+(na ekranie logowania jest przycisk „Wejdź na konto demo").
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Seed tworzy: 40 ćwiczeń systemowych, 25 produktów spożywczych, plan Push/Pull/Legs,
+25 zakończonych treningów z ostatnich 8 tygodni, pomiary masy ciała z 60 dni,
+7 dni posiłków, 2 tygodnie suplementacji i plan treningów na najbliższe 2 tygodnie.
+Dzięki temu wykresy, progresja i rekordy działają od pierwszego wejścia.
 
-## Learn More
+### Skrypty
 
-To learn more about Next.js, take a look at the following resources:
+| Polecenie | Co robi |
+|---|---|
+| `npm run dev` | serwer developerski |
+| `npm run build` / `npm start` | build produkcyjny i jego uruchomienie |
+| `npm test` | testy jednostkowe logiki (node:test, 33 testy) |
+| `npm run seed` | czyści konto demo i wypełnia bazę danymi przykładowymi |
+| `npm run db:migrate` | migracja developerska |
+| `npm run db:studio` | Prisma Studio |
+| `node scripts/e2e.mjs` | 18 scenariuszy przeklikanych w Chromium (wymaga `npm start`) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 2. Co jest zaimplementowane
 
-## Deploy on Vercel
+### Tryb treningowy (najważniejszy ekran)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- start jednym kliknięciem z dashboardu, kalendarza lub planu,
+- przy każdym ćwiczeniu **wynik z poprzedniego razu** (ciężar × powtórzenia @RPE),
+- **podpowiedź ciężaru** z podwójnej progresji - nigdy nie podbija ciężaru,
+  gdy poprzednie serie szły na RPE 9+; jedno dotknięcie wpisuje ją we wszystkie serie,
+- duże pola na ciężar i powtórzenia, RPE/RIR z dużych przycisków (6-10 / 0-4+),
+- po odhaczeniu serii kursor **sam przechodzi do kolejnej** i startuje stoper przerwy,
+- stoper w formie świateł startowych (5 świateł gaśnie = koniec przerwy) z sygnałem
+  dźwiękowym, wibracją i powiadomieniem systemowym,
+- **autozapis** - nie ma przycisku „zapisz"; stan zapisu widać w nagłówku,
+- serie rozgrzewkowe, notatki do serii, do ćwiczenia i do całego treningu,
+- dodawanie ćwiczeń w trakcie treningu, superserie (A1/A2).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Reszta aplikacji
+
+- **Dashboard** - dzisiejszy trening albo podsumowanie wykonanego, szybkie statystyki,
+  wykres progresji najczęściej trenowanego boju, dieta, suplementy, rekordy, ostatnia aktywność.
+- **Plany** - plan → treningi (Push/Pull/Legs/Upper/Lower) → ćwiczenia z konfiguracją:
+  serie, zakres powtórzeń, docelowy ciężar, RPE, RIR, przerwa, tempo, superseria, notatka.
+- **Ćwiczenia** - 40 ćwiczeń systemowych + własne; kategoria, partia główna i pomocnicze,
+  typ, jednostka (kg/lb/masa ciała/czas/dystans), instrukcje techniczne.
+- **Progresja** - dla każdego ćwiczenia wykres z przełącznikiem: ciężar, powtórzenia,
+  objętość, szacowane 1RM, RPE; rekordy i lista ostatnich wykonań.
+- **Kalendarz** - widok miesięczny z oznaczeniem: wykonany / zaplanowany / odpoczynek,
+  szczegóły dnia, planowanie treningów i dni wolnych.
+- **Historia** - lista treningów z filtrami (zakres dat, trening, ćwiczenie) i pełne
+  podsumowanie pojedynczej sesji (tabela serii, objętość, szacowane 1RM, ocena, notatki).
+- **Statystyki** - liczba treningów, średni czas, objętość, serie, średnie RPE, regularność,
+  objętość tygodniowa, podział na partie, masa ciała, rekordy osobiste, obserwacje.
+- **Dieta** - cele dzienne (własne albo policzone z profilu wzorem Mifflina-St Jeora),
+  posiłki z godziną, pozycje z bazy produktów lub wpisane ręcznie, sumy kalorii i makro.
+- **Suplementacja** - suplementy z dawką, jednostką, porami dnia i dniami tygodnia,
+  odhaczanie dawek jednym dotknięciem, widok ostatnich 7 dni.
+- **Ustawienia** - profil (płeć, rok urodzenia, wzrost, cel, aktywność), jednostki,
+  preferowana skala wysiłku (RPE / RIR / oba), skok ciężaru, masa ciała z wykresem, motyw.
+
+### Jak liczone są liczby
+
+| Wskaźnik | Metoda |
+|---|---|
+| Objętość | ciężar × powtórzenia, tylko serie robocze oznaczone jako wykonane |
+| Szacowane 1RM | tabela RPE/RIR (RTS) - uwzględnia zapas powtórzeń; bez RPE wzór Epleya |
+| RPE ↔ RIR | RPE 8 = RIR 2, przeliczane w obie strony |
+| Podpowiedź ciężaru | podwójna progresja: najpierw powtórzenia w zakresie, potem ciężar |
+| Zapotrzebowanie | Mifflin-St Jeor × współczynnik aktywności ± korekta na cel |
+| Seria treningowa | liczba kolejnych tygodni z co najmniej jednym treningiem |
+
+Cała ta logika siedzi w `src/lib/training.ts` i `src/lib/nutrition.ts` - są to czyste funkcje
+bez zależności od bazy i Reacta, pokryte testami (`npm test`).
+
+---
+
+## 3. Architektura
+
+```
+prisma/schema.prisma     model relacyjny (plan ≠ wykonany trening)
+prisma/seed.ts           dane przykładowe
+
+src/app/(auth)/          logowanie i rejestracja
+src/app/(app)/           aplikacja: dashboard, trening, kalendarz, ćwiczenia,
+                         plany, dieta, suplementacja, statystyki, historia, ustawienia
+src/components/ui/       elementy interfejsu (przyciski, karty, panele, pola)
+src/components/training/ tryb treningowy: wiersz serii, blok ćwiczenia, stoper, wybór RPE
+src/components/...       komponenty pozostałych sekcji
+src/lib/                 czysta logika: trening, żywienie, daty, wnioski, dane startowe
+src/schemas/             schematy Zod - te same po stronie klienta i serwera
+src/server/actions/      akcje serwerowe (mutacje)
+src/server/queries/      odczyty złożone
+src/server/auth.ts       sesje, hasła, brama dostępu do danych
+src/hooks/               autozapis serii z kolejką offline
+```
+
+**Rozdzielenie planu od wykonania.** `WorkoutPlan → Workout → WorkoutExercise` opisuje zamiar
+(„Bench Press 4 × 8-10, RPE 8"). `WorkoutSession → SessionExercise → WorkoutSet` przechowuje fakt
+(„2026-09-08: 80 × 10 @8, 82.5 × 9 @9"). Sesja kopiuje założenia z planu, więc późniejsza edycja
+planu nie zmienia historii.
+
+**Bezpieczeństwo.** Hasła w bcrypt (12 rund), sesja w bazie z tokenem trzymanym jako hash sha256,
+ciasteczko `httpOnly`+`sameSite=lax`. Każda akcja serwerowa zaczyna od `requireUser()`, a każde
+zapytanie filtruje po `userId` - również przy zapisie serii sprawdzane jest, czy dana seria należy
+do sesji użytkownika. Walidacja Zod działa po obu stronach; makro produktów z bazy liczy serwer,
+żeby klient nie mógł podać własnych wartości.
+
+**Autozapis i offline.** Zmiany serii trafiają do kolejki, ta leci na serwer po krótkiej ciszy
+i równolegle ląduje w `localStorage`. Odświeżenie strony, zabicie aplikacji albo utrata zasięgu
+nie kasują wpisanych wyników - wysyłka ponawia się po powrocie sieci. Service worker trzyma
+powłokę aplikacji w cache, więc ekran treningu otwiera się bez internetu.
+
+---
+
+## 4. Przygotowane pod dalszą rozbudowę
+
+- **AI Coach** - `src/lib/coach.ts` przyjmuje gotowy opis sytuacji zawodnika (`CoachInput`:
+  progresja bojów, objętość na partie, regularność, dieta, masa ciała, zmęczenie) i zwraca wnioski.
+  Dziś generuje je zestaw reguł, jutro może je generować model językowy - reszta aplikacji się nie zmienia.
+  Wnioski widać na ekranie Statystyki, model `CoachInsight` czeka na ich historię.
+- **Powiadomienia** - model `Reminder` (typ, godzina, dni tygodnia) i obsługa kliknięcia
+  w powiadomienie w service workerze. Brakuje samej wysyłki (push albo zadanie cykliczne).
+- **Baza produktów** - model `Food` i pozycje posiłku wskazujące na produkt (`foodId`);
+  25 produktów startowych można wymienić na pełną bazę bez migracji danych.
+- **Superserie** - grupowanie jest w modelu i w interfejsie (A1/A2); brakuje trybu prowadzenia
+  po kolei A1 → A2 → przerwa.
+- **Synchronizacja wielourządzeniowa** - kolejka zapisu jest gotowa; brakuje rozstrzygania
+  konfliktów, gdy ten sam trening jest edytowany na dwóch urządzeniach.
+
+## 5. Znane ograniczenia
+
+- Ćwiczenia z masą ciała (podciąganie, dipy) liczą objętość tylko z ciężaru dodatkowego -
+  bez wagi ciała, więc seria bez obciążenia daje objętość 0.
+- Jednostka `lb` jest w profilu i w modelu, ale liczby nie są przeliczane - aplikacja
+  konsekwentnie operuje na kilogramach.
+- Kalendarz planuje pojedyncze dni; nie ma jeszcze rozpisywania cyklu na kilka tygodni naprzód.
+- Offline działa dla trwającego treningu i powłoki aplikacji; pozostałe ekrany bez sieci
+  pokażą ostatnią wersję z cache albo stronę „Brak połączenia".
+- Testy end-to-end (`scripts/e2e.mjs`) wymagają uruchomionego `npm start` i Chromium.

@@ -1,4 +1,4 @@
-/** Liczenie zapotrzebowania i makroskladnikow. Czyste funkcje - testowalne bez bazy. */
+/** Liczenie zapotrzebowania i makroskładników. Czyste funkcje - testowalne bez bazy. */
 
 export type MacroSet = {
   calories: number;
@@ -32,7 +32,7 @@ export const GOAL_ADJUSTMENT = {
 
 export type GoalKey = keyof typeof GOAL_ADJUSTMENT;
 
-/** Mifflin-St Jeor - obecnie najczesciej stosowany wzor na spoczynkowa przemiane materii. */
+/** Mifflin-St Jeor - obecnie najczęściej stosowany wzór na spoczynkową przemianę materii. */
 export function bmr({ sex, weightKg, heightCm, age }: BmrInput): number | null {
   if (weightKg == null || heightCm == null || age == null) return null;
   if (![weightKg, heightCm, age].every((v) => Number.isFinite(v) && v > 0)) return null;
@@ -47,8 +47,8 @@ export function tdee(input: BmrInput & { activity?: ActivityKey | null }): numbe
 }
 
 /**
- * Propozycja celow. Bialko i tluszcz liczymy od masy ciala (bo to one maja
- * dolne granice), reszta kalorii idzie na wegle.
+ * Propozycja celów. Białko i tłuszcz liczymy od masy ciała (bo to one mają
+ * dolne granice), reszta kalorii idzie na węgle.
  */
 export function suggestedMacros(
   input: BmrInput & { activity?: ActivityKey | null; goal?: GoalKey | null },
@@ -80,7 +80,7 @@ export function sumMacros(items: Partial<MacroSet>[]): MacroSet {
   );
 }
 
-/** Przeliczenie wartosci z bazy produktow (na 100 g albo na sztuke) na zjedzona porcje. */
+/** Przeliczenie wartości z bazy produktów (na 100 g albo na sztukę) na zjedzoną porcję. */
 export function portionMacros(
   food: MacroSet & { per?: string | null },
   quantity: number,

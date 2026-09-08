@@ -1,5 +1,11 @@
 # Ewaluacja Trend Alert - aplikacja do zbierania feedbacku od marketerów
 
+> **W tym repozytorium są dwa niezależne projekty.** Ten dokument opisuje ankietę
+> ewaluacyjną Trend Alert (pliki w katalogu głównym). Aplikacja treningowa
+> („93 Trening": plany, logowanie serii z RPE, progresja, dieta, suplementacja)
+> mieszka w katalogu [`gym-app/`](gym-app/README.md) i ma własne README oraz własny stack
+> (Next.js + Prisma + PostgreSQL).
+
 Dwie strony, zero zależności, zero backendu (opcjonalnie arkusz Google):
 
 | Plik | Co robi |

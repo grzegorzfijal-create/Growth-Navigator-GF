@@ -20,10 +20,14 @@ export function useWorkoutSync(sessionId: string) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushing = useRef(false);
   const [status, setStatus] = useState<SyncStatus>("idle");
+  // Licznik trzymamy w stanie, bo interfejs go pokazuje - odczyt refa w renderze
+  // nie odświeżyłby widoku.
+  const [pending, setPending] = useState(0);
 
   const persist = useCallback(() => {
+    const entries = [...queue.current.values()];
+    setPending(entries.length);
     try {
-      const entries = [...queue.current.values()];
       if (entries.length === 0) localStorage.removeItem(storageKey(sessionId));
       else localStorage.setItem(storageKey(sessionId), JSON.stringify(entries));
     } catch {
@@ -31,6 +35,9 @@ export function useWorkoutSync(sessionId: string) {
     }
   }, [sessionId]);
 
+  // Kompilator Reacta nie potrafi zachować tej memoizacji (kolejka w ref + async),
+  // ale identyczność funkcji jest tu potrzebna: wisi na niej efekt nasłuchujący sieci.
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const flush = useCallback(async () => {
     if (flushing.current || queue.current.size === 0) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -110,5 +117,5 @@ export function useWorkoutSync(sessionId: string) {
     await flush();
   }, [flush]);
 
-  return { push, flushNow, status, pending: queue.current.size };
+  return { push, flushNow, status, pending };
 }
