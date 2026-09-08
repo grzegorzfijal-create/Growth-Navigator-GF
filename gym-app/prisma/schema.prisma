@@ -6,7 +6,10 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Aplikacja łączy się przez pulę połączeń (na serverless to konieczność),
+  // a migracje potrzebują połączenia bezpośredniego. Lokalnie oba adresy są takie same.
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ---------------------------------------------------------------- użytkownik

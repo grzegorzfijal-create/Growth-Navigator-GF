@@ -43,15 +43,67 @@ Dzięki temu wykresy, progresja i rekordy działają od pierwszego wejścia.
 |---|---|
 | `npm run dev` | serwer developerski |
 | `npm run build` / `npm start` | build produkcyjny i jego uruchomienie |
-| `npm test` | testy jednostkowe logiki (node:test, 33 testy) |
+| `npm test` | testy jednostkowe logiki (node:test, 34 testy) |
 | `npm run seed` | czyści konto demo i wypełnia bazę danymi przykładowymi |
+| `npm run seed:system` | tylko dane wspólne: ćwiczenia i produkty (wersja produkcyjna) |
 | `npm run db:migrate` | migracja developerska |
 | `npm run db:studio` | Prisma Studio |
 | `node scripts/e2e.mjs` | 18 scenariuszy przeklikanych w Chromium (wymaga `npm start`) |
+| `node scripts/offline-check.mjs` | sprawdza service workera i kolejkę zapisu bez sieci |
+
+Wymagany Node 22 lub nowszy - skrypty seedujące uruchamiają TypeScript natywnie.
 
 ---
 
-## 2. Co jest zaimplementowane
+## 2. Wdrożenie (żeby otworzyć aplikację z telefonu)
+
+Aplikacja ma backend i bazę, więc potrzebuje hostingu. Najkrótsza droga to **Vercel + Neon**
+(oba mają darmowy próg wystarczający na jedno konto).
+
+**1. Baza w Neon.** Załóż projekt na [neon.tech](https://neon.tech) i skopiuj dwa adresy połączenia:
+z pulą (`...-pooler...`) i bezpośredni (bez `-pooler`).
+
+**2. Projekt na Vercel.** Zaimportuj repozytorium, jako *Root Directory* ustaw `gym-app`.
+W *Settings → Environment Variables* dodaj:
+
+| Zmienna | Wartość |
+|---|---|
+| `DATABASE_URL` | adres **z pulą** (`-pooler`), z `?sslmode=require` |
+| `DIRECT_URL` | adres **bezpośredni**, z `?sslmode=require` |
+
+Pula połączeń jest po stronie serverless konieczna - każde wywołanie funkcji otwiera własne
+połączenie i bez niej baza szybko odmawia. Migracje idą osobnym, bezpośrednim adresem, bo
+Prisma potrzebuje do nich pełnej sesji.
+
+**3. Deploy.** Vercel sam użyje skryptu `vercel-build`, który przed budowaniem uruchamia
+`prisma migrate deploy` - schemat bazy zakłada się przy pierwszym wdrożeniu.
+
+**4. Dane wspólne.** Raz, lokalnie, wskazując na produkcyjną bazę:
+
+```bash
+DATABASE_URL="<adres z pulą>" DIRECT_URL="<adres bezpośredni>" npm run seed:system
+```
+
+To wgrywa 40 ćwiczeń i 25 produktów. Bez tego kroku nowe konto dostanie plan bez ćwiczeń,
+a wyszukiwarka produktów w diecie będzie pusta. **Nie uruchamiaj na produkcji `npm run seed`** -
+ta wersja kasuje i odtwarza konto demo.
+
+**5. Konto.** Wejdź na adres z Vercela i załóż własne konto przez „Załóż konto". Dostaniesz
+plan Push/Pull/Legs i zestaw suplementów na start. Konto demo nie istnieje na produkcji.
+
+**6. Instalacja na telefonie.** Otwórz stronę w przeglądarce → *Dodaj do ekranu głównego*.
+Aplikacja startuje wtedy pełnoekranowo, bez paska adresu, i działa przy słabym zasięgu.
+
+### Inny hosting
+
+Na własnym serwerze: `docker compose up -d` na bazę, potem `npm ci`, `npx prisma migrate deploy`,
+`npm run seed:system`, `npm run build`, `npm start` (domyślnie port 3000) za nginx z certyfikatem.
+`DATABASE_URL` i `DIRECT_URL` mogą wtedy wskazywać ten sam adres - pula nie jest potrzebna,
+bo proces jest jeden i długo żyjący.
+
+---
+
+## 3. Co jest zaimplementowane
 
 ### Tryb treningowy (najważniejszy ekran)
 
@@ -106,7 +158,7 @@ bez zależności od bazy i Reacta, pokryte testami (`npm test`).
 
 ---
 
-## 3. Architektura
+## 4. Architektura
 
 ```
 prisma/schema.prisma     model relacyjny (plan ≠ wykonany trening)
@@ -144,7 +196,7 @@ powłokę aplikacji w cache, więc ekran treningu otwiera się bez internetu.
 
 ---
 
-## 4. Przygotowane pod dalszą rozbudowę
+## 5. Przygotowane pod dalszą rozbudowę
 
 - **AI Coach** - `src/lib/coach.ts` przyjmuje gotowy opis sytuacji zawodnika (`CoachInput`:
   progresja bojów, objętość na partie, regularność, dieta, masa ciała, zmęczenie) i zwraca wnioski.
@@ -159,7 +211,7 @@ powłokę aplikacji w cache, więc ekran treningu otwiera się bez internetu.
 - **Synchronizacja wielourządzeniowa** - kolejka zapisu jest gotowa; brakuje rozstrzygania
   konfliktów, gdy ten sam trening jest edytowany na dwóch urządzeniach.
 
-## 5. Znane ograniczenia
+## 6. Znane ograniczenia
 
 - Ćwiczenia z masą ciała (podciąganie, dipy) liczą objętość tylko z ciężaru dodatkowego -
   bez wagi ciała, więc seria bez obciążenia daje objętość 0.

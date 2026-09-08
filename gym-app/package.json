@@ -12,7 +12,9 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed:system": "node --experimental-strip-types prisma/seed.ts --system-only",
+    "vercel-build": "prisma migrate deploy && prisma generate && next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -64,5 +66,8 @@
   },
   "prisma": {
     "seed": "node --experimental-strip-types prisma/seed.ts"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

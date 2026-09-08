@@ -375,11 +375,20 @@ async function seedSupplementLogs(userId: string, today: string): Promise<void> 
   }
 }
 
+/**
+ * Bez argumentów: pełny seed z kontem demo (do developmentu).
+ * Z flagą --system-only: same dane wspólne, czyli ćwiczenia i produkty.
+ * Ta druga wersja idzie na produkcję - bez niej nowe konto dostałoby plan
+ * bez ćwiczeń, a dieta pustą wyszukiwarkę produktów.
+ */
 async function main(): Promise<void> {
-  console.log("Seed bazy treningowej...");
+  const systemOnly = process.argv.includes("--system-only");
+  console.log(systemOnly ? "Seed danych wspólnych..." : "Seed bazy treningowej...");
+
   await seedSystemExercises();
   await seedFoods();
-  await seedDemoUser();
+  if (!systemOnly) await seedDemoUser();
+
   console.log("Gotowe.");
 }
 
