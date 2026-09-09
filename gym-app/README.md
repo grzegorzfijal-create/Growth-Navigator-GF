@@ -43,13 +43,14 @@ Dzięki temu wykresy, progresja i rekordy działają od pierwszego wejścia.
 |---|---|
 | `npm run dev` | serwer developerski |
 | `npm run build` / `npm start` | build produkcyjny i jego uruchomienie |
-| `npm test` | testy jednostkowe logiki (node:test, 34 testy) |
+| `npm test` | testy jednostkowe logiki (node:test, 41 testów) |
 | `npm run seed` | czyści konto demo i wypełnia bazę danymi przykładowymi |
 | `npm run seed:system` | tylko dane wspólne: ćwiczenia i produkty (wersja produkcyjna) |
 | `npm run db:migrate` | migracja developerska |
 | `npm run db:studio` | Prisma Studio |
 | `node scripts/e2e.mjs` | 18 scenariuszy przeklikanych w Chromium (wymaga `npm start`) |
 | `node scripts/offline-check.mjs` | sprawdza service workera i kolejkę zapisu bez sieci |
+| `node scripts/health-sync-check.mjs` | sprawdza synchronizację masy ciała z aplikacji Zdrowie (wymaga `npm start`) |
 
 Wymagany Node 22 lub nowszy - skrypty seedujące uruchamiają TypeScript natywnie.
 
@@ -94,6 +95,47 @@ plan Push/Pull/Legs i zestaw suplementów na start. Konto demo nie istnieje na p
 **6. Instalacja na telefonie.** Otwórz stronę w przeglądarce → *Dodaj do ekranu głównego*.
 Aplikacja startuje wtedy pełnoekranowo, bez paska adresu, i działa przy słabym zasięgu.
 
+### Waga elektroniczna i aplikacja Zdrowie (iPhone)
+
+Apple nie daje serwerom dostępu do danych Zdrowia - most musi postawić sam telefon.
+Dlatego aplikacja wystawia własne wejście, a pomiar wysyła **Skrót** z iPhone'a:
+
+```
+waga elektroniczna → jej aplikacja → Zdrowie → Skrót (automatyzacja) → POST /api/health/weight
+```
+
+Działa z każdą wagą, której aplikacja umie pisać do Zdrowia (Withings, Garmin, Renpho,
+Eufy, Xiaomi/Zepp i podobne), bo aplikacja nie rozmawia z konkretnym producentem.
+
+**Konfiguracja:** Ustawienia → *Waga i aplikacja Zdrowie* → wygeneruj token (widać go raz)
+→ przycisk *Jak ustawić skrót na iPhonie* prowadzi przez cztery kroki: akcja
+„Znajdź próbki zdrowotne" (Masa ciała, sortuj malejąco, limit 1), akcja „Pobierz zawartość URL"
+(POST, nagłówek `Authorization: Bearer <token>`, treść JSON z `weight` i `date`),
+automatyzacja codziennie rano.
+
+**Wejście HTTP:**
+
+```http
+POST /api/health/weight
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "weight": 84.2, "date": "2026-09-09" }              # jeden pomiar
+{ "weight": "185", "unit": "lb" }                      # funty, data dzisiejsza
+{ "samples": [ { "weight": 83.4, "date": "..." } ] }   # import historii (do 400 pozycji)
+```
+
+GET pod tym samym adresem sprawdza token i zwraca ostatni zapisany pomiar - przydaje się
+przy pierwszym uruchomieniu skrótu.
+
+Zasady, które pilnuje serwer: token trzymany wyłącznie jako hash sha256 (i unieważnialny
+z ustawień), wartości spoza 20-400 kg odrzucane, daty z przyszłości odrzucane (typowy objaw
+złej strefy czasowej w skrócie), ten sam dzień nadpisuje wpis zamiast tworzyć duplikat,
+a data brana jest z napisu ISO, więc poranne ważenie nie ucieka na poprzedni dzień.
+
+Cała droga - od wygenerowania tokenu, przez wysyłkę, po widok w aplikacji i unieważnienie
+tokenu - jest pokryta testem `scripts/health-sync-check.mjs`.
+
 ### Inny hosting
 
 Na własnym serwerze: `docker compose up -d` na bazę, potem `npm ci`, `npx prisma migrate deploy`,
@@ -125,6 +167,8 @@ bo proces jest jeden i długo żyjący.
   wykres progresji najczęściej trenowanego boju, dieta, suplementy, rekordy, ostatnia aktywność.
 - **Plany** - plan → treningi (Push/Pull/Legs/Upper/Lower) → ćwiczenia z konfiguracją:
   serie, zakres powtórzeń, docelowy ciężar, RPE, RIR, przerwa, tempo, superseria, notatka.
+- **Waga i Zdrowie** - synchronizacja masy ciała z aplikacji Zdrowie przez Skrót na iPhonie
+  (osobiste tokeny, import historii jedną paczką) - szczegóły w sekcji o wdrożeniu.
 - **Ćwiczenia** - 40 ćwiczeń systemowych + własne; kategoria, partia główna i pomocnicze,
   typ, jednostka (kg/lb/masa ciała/czas/dystans), instrukcje techniczne.
 - **Progresja** - dla każdego ćwiczenia wykres z przełącznikiem: ciężar, powtórzenia,
@@ -210,13 +254,19 @@ powłokę aplikacji w cache, więc ekran treningu otwiera się bez internetu.
   po kolei A1 → A2 → przerwa.
 - **Synchronizacja wielourządzeniowa** - kolejka zapisu jest gotowa; brakuje rozstrzygania
   konfliktów, gdy ten sam trening jest edytowany na dwóch urządzeniach.
+- **Więcej danych ze Zdrowia** - wejście `/api/health/weight` przyjmuje masę ciała i procent
+  tkanki tłuszczowej. Model `ApiToken` ma pole `scope`, więc kolejne wejścia (sen, tętno spoczynkowe,
+  kroki) to nowa trasa i ten sam mechanizm tokenów, bez zmian w skrócie na telefonie.
 
 ## 6. Znane ograniczenia
 
 - Ćwiczenia z masą ciała (podciąganie, dipy) liczą objętość tylko z ciężaru dodatkowego -
   bez wagi ciała, więc seria bez obciążenia daje objętość 0.
 - Jednostka `lb` jest w profilu i w modelu, ale liczby nie są przeliczane - aplikacja
-  konsekwentnie operuje na kilogramach.
+  konsekwentnie operuje na kilogramach (wyjątkiem jest wejście HTTP, które przelicza funty na kilogramy).
+- Synchronizacja ze Zdrowiem wymaga wdrożonej aplikacji pod publicznym adresem - na `localhost`
+  telefon nie ma jak wysłać pomiaru. Kierunek jest jednostronny: telefon wysyła, aplikacja nie
+  zapisuje nic z powrotem do Zdrowia.
 - Kalendarz planuje pojedyncze dni; nie ma jeszcze rozpisywania cyklu na kilka tygodni naprzód.
 - Offline działa dla trwającego treningu i powłoki aplikacji; pozostałe ekrany bez sieci
   pokażą ostatnią wersję z cache albo stronę „Brak połączenia".

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { HealthSyncSection } from "@/components/settings/health-sync";
 import { BodyWeightSection } from "@/components/settings/body-weight-form";
 import { LogoutButton } from "@/components/settings/logout-button";
 import { ProfileForm } from "@/components/settings/profile-form";
@@ -8,16 +10,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toIsoDate } from "@/lib/date";
 import { requireUser } from "@/server/auth";
 import { prisma } from "@/server/db";
+import { listApiTokens } from "@/server/tokens";
 
 export const metadata: Metadata = { title: "Ustawienia" };
 
 export default async function SettingsPage() {
   const user = await requireUser();
-  const entries = await prisma.bodyWeightEntry.findMany({
-    where: { userId: user.id },
-    orderBy: { date: "asc" },
-    take: 200,
-  });
+  // Adres publiczny czytamy z nagłówków - po wdrożeniu skrót dostanie właściwy URL bez zmian w kodzie.
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "";
+  const proto = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
+  const origin = host ? `${proto}://${host}` : "";
+
+  const [entries, tokens] = await Promise.all([
+    prisma.bodyWeightEntry.findMany({ where: { userId: user.id }, orderBy: { date: "asc" }, take: 200 }),
+    listApiTokens(user.id),
+  ]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -37,6 +45,24 @@ export default async function SettingsPage() {
               date: toIsoDate(entry.date),
               weight: entry.weight,
               note: entry.note,
+            }))}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Waga i aplikacja Zdrowie</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <HealthSyncSection
+            origin={origin}
+            tokens={tokens.map((token) => ({
+              id: token.id,
+              name: token.name,
+              preview: token.preview,
+              createdAt: token.createdAt.toISOString(),
+              lastUsedAt: token.lastUsedAt ? token.lastUsedAt.toISOString() : null,
             }))}
           />
         </CardContent>

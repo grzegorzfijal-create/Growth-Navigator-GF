@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Aplikacja łączy się przez pulę połączeń (na serverless to konieczność),
   // a migracje potrzebują połączenia bezpośredniego. Lokalnie oba adresy są takie same.
   url       = env("DATABASE_URL")
@@ -83,6 +83,7 @@ model User {
   scheduled         ScheduledWorkout[]
   reminders         Reminder[]
   insights          CoachInsight[]
+  apiTokens         ApiToken[]
 }
 
 // Sesja logowania - token trzymamy wyłącznie jako hash sha256.
@@ -359,12 +360,18 @@ model PersonalRecord {
 // --------------------------------------------------------------- masa ciała
 
 model BodyWeightEntry {
-  id     String   @id @default(cuid())
-  userId String
-  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date   DateTime @db.Date
-  weight Float
-  note   String?
+  id      String   @id @default(cuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date    DateTime @db.Date
+  weight  Float
+  bodyFat Float? // procent tkanki tłuszczowej, jeśli waga go mierzy
+  note    String?
+  // MANUAL = wpisane w aplikacji, HEALTH = przysłane z Apple Health / wagi
+  source  String   @default("MANUAL")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([userId, date])
   @@index([userId, date])
@@ -474,6 +481,28 @@ model SupplementLog {
 
   @@unique([supplementId, date, timing])
   @@index([userId, date])
+}
+
+// ------------------------------------------------------ integracje zewnętrzne
+
+/**
+ * Osobisty token do wysyłania pomiarów z zewnątrz (Skróty na iPhonie czytające
+ * aplikację Zdrowie, skrypt z wagi, cokolwiek co potrafi wysłać POST).
+ * W bazie trzymamy wyłącznie hash - token pokazujemy raz, przy tworzeniu.
+ */
+model ApiToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  tokenHash  String    @unique
+  preview    String // ostatnie znaki tokenu, żeby dało się go rozpoznać na liście
+  scope      String    @default("health")
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  @@index([userId])
 }
 
 // ----------------------------------------- przygotowane pod przyszłą rozbudowę
